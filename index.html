@@ -123,6 +123,7 @@ header { background: var(–surface); border-bottom: 1px solid var(–border); p
 .day-dots { display: flex; gap: 1px; }
 .ddot { width: 4px; height: 4px; border-radius: 50%; background: var(–ink2); opacity: 0.55; }
 .day.s-free { background: #edf7f1; }
+.day.s-occ { background: #d4edda; }
 .day.s-warn { background: #fffbe6; }
 .day.s-full { background: #fde8e8; cursor: not-allowed !important; }
 .day.s-mine { background: #dceeff; border-color: #80b4e8 !important; }
@@ -451,11 +452,26 @@ function buildMonth(year,month,occ){
   for(let d=1;d<=dim;d++){
     const ds=`${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
     const docIds=occ[ds]||[],cnt=docIds.length,weekend=isWeekend(ds),isMine=selectedDoc!==null&&docIds.includes(selectedDoc);
-    let state='s-free';if(cnt>=MAX_HARD)state='s-full';else if(cnt>=MAX_SOFT)state='s-warn';if(isMine)state='s-mine';
-    const cell=document.createElement('div');cell.className=`day${weekend?' weekend':''} ${state}`;
+    let state='s-free';
+    if(cnt>=MAX_HARD) state='s-full';
+    else if(cnt>=MAX_SOFT) state='s-warn';
+    else if(cnt>0) state='s-occ';
+    if(isMine) state='s-mine';
+    const cell=document.createElement('div');
+    // Remove 'weekend' dimming class when doctor has vacations on that day
+    const wkClass = (weekend && cnt===0) ? ' weekend' : '';
+    cell.className=`day${wkClass} ${state}`;
+    if(weekend && cnt===0) cell.style.opacity='0.3';
     const dots=docIds.slice(0,5).map(()=>'<div class="ddot"></div>').join('');
     cell.innerHTML=`<div class="day-n">${d}</div><div class="day-dots">${dots}</div>`;
-    if(!weekend){cell.innerHTML+=`<div class="day-tooltip">${cnt} médico${cnt!==1?'s':''} ${cnt===0?'disponibles':'de vacaciones'}</div>`;cell.onclick=(e)=>showDayPopup(ds,docIds,e);}
+    if(!weekend){
+      cell.innerHTML+=`<div class="day-tooltip">${cnt} médico${cnt!==1?'s':''} ${cnt===0?'disponibles':'de vacaciones'}</div>`;
+      cell.onclick=(e)=>showDayPopup(ds,docIds,e);
+    } else if(cnt>0){
+      cell.innerHTML+=`<div class="day-tooltip">${cnt} médico${cnt!==1?'s':''} de vacaciones</div>`;
+      cell.onclick=(e)=>showDayPopup(ds,docIds,e);
+      cell.style.cursor='pointer';
+    }
     body.appendChild(cell);
   }
   return card;
