@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vacaciones · Clínica de Marly</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f5f3ee; --surface: #ffffff; --card: #faf9f6;
+  --border: #e2ddd5; --ink: #1a1916; --ink2: #5a5750; --ink3: #9a9590;
+  --accent: #1a5c3a; --accent-light: #e8f3ed;
+  --amber: #c26b00; --amber-light: #fff3e0;
+  --red: #b83232; --red-light: #fdeaea; --teal: #1a6b6b; --ok: #2d7a4a;
+  --shadow: 0 1px 4px rgba(0,0,0,0.08), 0 4px 16px rgba(0,0,0,0.04);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,0.12);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--ink); font-family: 'Instrument Sans', sans-serif; font-size: 14px; min-height: 100vh; }
+
+#loading-screen { position: fixed; inset: 0; background: var(–bg); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 2000; gap: 1rem; }
+.spinner { width: 36px; height: 36px; border: 3px solid var(–border); border-top-color: var(–accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+#loading-screen p { font-size: 0.8rem; color: var(–ink3); }
+
+#login-screen { display: none; position: fixed; inset: 0; background: rgba(26,25,22,0.7); backdrop-filter: blur(6px); z-index: 1000; align-items: center; justify-content: center; }
+#login-screen.visible { display: flex; }
+.login-box { background: var(–surface); border: 1px solid var(–border); border-radius: 12px; padding: 2.5rem; width: 340px; box-shadow: var(–shadow-lg); }
+.login-box h2 { font-family: ‘Instrument Serif’, serif; font-size: 1.6rem; margin-bottom: 0.3rem; }
+.login-box p { font-size: 0.8rem; color: var(–ink3); margin-bottom: 1.5rem; }
+.login-box input { width: 100%; padding: 0.65rem 0.9rem; border: 1.5px solid var(–border); border-radius: 8px; font-family: ‘Instrument Sans’, sans-serif; font-size: 0.9rem; background: var(–card); color: var(–ink); margin-bottom: 0.8rem; transition: border-color 0.15s; }
+.login-box input:focus { outline: none; border-color: var(–accent); }
+.btn-primary { width: 100%; background: var(–accent); color: white; border: none; border-radius: 8px; padding: 0.65rem; font-family: ‘Instrument Sans’, sans-serif; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: opacity 0.15s; }
+.btn-primary:hover { opacity: 0.88; }
+.login-error { font-size: 0.75rem; color: var(–red); margin-top: 0.6rem; min-height: 1rem; }
+.btn-cancel { background: none; border: none; color: var(–ink3); font-size: 0.78rem; cursor: pointer; margin-top: 0.6rem; text-align: center; width: 100%; display: block; }
+
+header { background: var(–surface); border-bottom: 1px solid var(–border); padding: 1rem 2rem; display: flex; align-items: center; gap: 1.5rem; position: sticky; top: 0; z-index: 100; }
+.brand h1 { font-family: ‘Instrument Serif’, serif; font-size: 1.3rem; }
+.brand p { font-size: 0.68rem; color: var(–ink3); text-transform: uppercase; letter-spacing: 0.1em; }
+.header-right { display: flex; gap: 0.6rem; margin-left: auto; align-items: center; flex-wrap: wrap; }
+.badge { padding: 0.3rem 0.7rem; border-radius: 20px; font-size: 0.7rem; font-weight: 500; border: 1px solid; }
+.badge.green { background: var(–accent-light); color: var(–accent); border-color: #b5d9c3; }
+.badge.amber { background: var(–amber-light); color: var(–amber); border-color: #f0c98a; }
+.badge.admin { background: #1a1916; color: #f5f3ee; border-color: #1a1916; }
+#sync-badge { font-size: 0.65rem; }
+.role-btn { padding: 0.35rem 0.9rem; border-radius: 20px; font-size: 0.72rem; font-weight: 600; cursor: pointer; border: 1.5px solid var(–border); background: var(–card); color: var(–ink2); transition: all 0.15s; }
+.role-btn:hover { border-color: var(–accent); color: var(–accent); }
+.role-btn.active { background: var(–accent); color: white; border-color: var(–accent); }
+
+.app-body { display: grid; grid-template-columns: 260px 1fr; min-height: calc(100vh - 60px); }
+.sidebar { background: var(–surface); border-right: 1px solid var(–border); padding: 1.2rem; overflow-y: auto; }
+.sidebar-section { margin-bottom: 1.5rem; }
+.sidebar-section h3 { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(–ink3); margin-bottom: 0.6rem; padding-bottom: 0.4rem; border-bottom: 1px solid var(–border); }
+.legend-items { display: flex; flex-direction: column; gap: 0.4rem; }
+.legend-row { display: flex; align-items: center; gap: 0.5rem; font-size: 0.72rem; color: var(–ink2); }
+.lsq { width: 14px; height: 14px; border-radius: 3px; flex-shrink: 0; }
+.lsq.free { background: #d4edda; border: 1px solid #9dd4ae; }
+.lsq.warn { background: #fff0c0; border: 1px solid #f0c840; }
+.lsq.full { background: #fdd; border: 1px solid #f0a0a0; }
+.lsq.mine { background: #d0e8ff; border: 1px solid #80b4e8; }
+.doctor-item { display: flex; align-items: center; gap: 0.6rem; padding: 0.5rem 0.6rem; border-radius: 6px; cursor: pointer; border: 1px solid transparent; transition: all 0.12s; margin-bottom: 2px; }
+.doctor-item:hover { background: var(–card); border-color: var(–border); }
+.doctor-item.selected { background: var(–accent-light); border-color: #9dd4ae; }
+.doctor-avatar { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.6rem; font-weight: 600; color: white; flex-shrink: 0; }
+.doctor-info { flex: 1; min-width: 0; }
+.doctor-name-sm { font-size: 0.75rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.doctor-days-sm { font-size: 0.62rem; color: var(–ink3); }
+.doctor-mini-bar { height: 2px; background: var(–border); border-radius: 1px; margin-top: 2px; }
+.doctor-mini-fill { height: 100%; border-radius: 1px; transition: width 0.3s; }
+
+.main-content { padding: 1.5rem 2rem; overflow-y: auto; }
+.toolbar { display: flex; gap: 0.6rem; align-items: center; margin-bottom: 1.2rem; flex-wrap: wrap; }
+.toolbar select, .btn-outline { padding: 0.4rem 0.8rem; border: 1.5px solid var(–border); border-radius: 6px; background: var(–surface); color: var(–ink); font-family: ‘Instrument Sans’, sans-serif; font-size: 0.75rem; cursor: pointer; transition: all 0.12s; }
+.btn-outline:hover { border-color: var(–accent); color: var(–accent); }
+
+#admin-panel { background: var(–surface); border: 1.5px solid var(–border); border-radius: 10px; padding: 1.1rem 1.3rem; margin-bottom: 1.2rem; display: none; }
+#admin-panel.visible { display: block; }
+#admin-panel h3 { font-family: ‘Instrument Serif’, serif; font-size: 1rem; margin-bottom: 0.8rem; color: var(–accent); }
+.admin-form { display: flex; gap: 0.8rem; align-items: flex-end; flex-wrap: wrap; }
+.form-group { display: flex; flex-direction: column; gap: 0.3rem; }
+.form-group label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(–ink3); }
+.form-group select, .form-group input[type=“date”] { padding: 0.45rem 0.7rem; border: 1.5px solid var(–border); border-radius: 6px; font-family: ‘Instrument Sans’, sans-serif; font-size: 0.78rem; background: var(–card); color: var(–ink); }
+.form-group select:focus, .form-group input:focus { outline: none; border-color: var(–accent); }
+.days-preview { padding: 0.45rem 0.7rem; background: var(–accent-light); border-radius: 6px; font-size: 0.78rem; font-weight: 600; color: var(–accent); min-width: 80px; text-align: center; }
+.btn-sm { padding: 0.4rem 0.9rem; border-radius: 6px; font-family: ‘Instrument Sans’, sans-serif; font-size: 0.75rem; font-weight: 600; cursor: pointer; border: 1.5px solid; transition: all 0.12s; }
+.btn-sm.green { background: var(–accent); color: white; border-color: var(–accent); }
+.btn-sm.green:hover { opacity: 0.88; }
+.assign-status { font-size: 0.72rem; margin-top: 0.6rem; min-height: 1.2rem; }
+.assign-status.ok { color: var(–ok); }
+.assign-status.warn { color: var(–amber); }
+.assign-status.err { color: var(–red); }
+
+#doctor-detail { background: var(–surface); border: 1px solid var(–border); border-radius: 10px; padding: 1rem 1.2rem; margin-bottom: 1.2rem; display: none; }
+#doctor-detail.visible { display: block; }
+.detail-header { display: flex; align-items: center; gap: 0.8rem; margin-bottom: 0.8rem; }
+.detail-avatar { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700; color: white; }
+.detail-name { font-family: ‘Instrument Serif’, serif; font-size: 1.1rem; }
+.detail-sub { font-size: 0.7rem; color: var(–ink3); }
+.progress-bar { height: 6px; background: var(–border); border-radius: 3px; margin: 0.5rem 0; overflow: hidden; }
+.progress-fill { height: 100%; border-radius: 3px; transition: width 0.4s; }
+.vac-list { display: flex; flex-direction: column; gap: 0.35rem; margin-top: 0.6rem; }
+.vac-row { display: flex; align-items: center; gap: 0.6rem; padding: 0.4rem 0.6rem; background: var(–card); border: 1px solid var(–border); border-radius: 6px; font-size: 0.72rem; }
+.vac-range { color: var(–teal); font-weight: 500; flex: 1; }
+.vac-days-count { color: var(–ink3); }
+.btn-del { background: none; border: none; color: var(–ink3); cursor: pointer; font-size: 0.9rem; padding: 0 0.2rem; transition: color 0.12s; }
+.btn-del:hover { color: var(–red); }
+
+.months-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 1rem; }
+.month-card { background: var(–surface); border: 1px solid var(–border); border-radius: 10px; overflow: hidden; box-shadow: var(–shadow); }
+.month-head { padding: 0.6rem 0.9rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(–border); background: var(–card); }
+.month-name { font-family: ‘Instrument Serif’, serif; font-size: 1rem; }
+.month-peak { font-size: 0.65rem; color: var(–ink3); }
+.days-header { display: grid; grid-template-columns: repeat(7,1fr); padding: 0.4rem 0.5rem 0.2rem; gap: 2px; }
+.dh { text-align: center; font-size: 0.58rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(–ink3); }
+.days-body { display: grid; grid-template-columns: repeat(7,1fr); padding: 0.2rem 0.5rem 0.6rem; gap: 2px; }
+.day { aspect-ratio: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 5px; font-size: 0.68rem; position: relative; border: 1.5px solid transparent; transition: all 0.1s; cursor: pointer; gap: 1px; }
+.day.empty, .day.weekend { cursor: default; }
+.day.weekend { opacity: 0.3; }
+.day:not(.empty):not(.weekend):hover { border-color: var(–accent); z-index: 1; }
+.day-n { line-height: 1; font-weight: 500; }
+.day-dots { display: flex; gap: 1px; }
+.ddot { width: 4px; height: 4px; border-radius: 50%; background: var(–ink2); opacity: 0.55; }
+.day.s-free { background: #edf7f1; }
+.day.s-warn { background: #fffbe6; }
+.day.s-full { background: #fde8e8; cursor: not-allowed !important; }
+.day.s-mine { background: #dceeff; border-color: #80b4e8 !important; }
+.day-tooltip { display: none; position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%); background: var(–ink); color: white; font-size: 0.6rem; padding: 0.3rem 0.5rem; border-radius: 5px; white-space: nowrap; z-index: 200; pointer-events: none; }
+.day:hover .day-tooltip { display: block; }
+
+#day-popup { display: none; position: fixed; background: var(–surface); border: 1px solid var(–border); border-radius: 10px; padding: 1rem 1.2rem; width: 260px; box-shadow: var(–shadow-lg); z-index: 300; }
+#day-popup h4 { font-family: ‘Instrument Serif’, serif; font-size: 1rem; margin-bottom: 0.5rem; }
+.popup-names { display: flex; flex-direction: column; gap: 0.3rem; }
+.popup-name-row { font-size: 0.72rem; display: flex; align-items: center; gap: 0.4rem; }
+.popup-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.popup-status { font-size: 0.68rem; margin-top: 0.6rem; padding: 0.35rem 0.6rem; border-radius: 5px; }
+.popup-status.ok { background: var(–accent-light); color: var(–accent); }
+.popup-status.warn { background: var(–amber-light); color: var(–amber); }
+.popup-status.full { background: var(–red-light); color: var(–red); }
+.popup-close { position: absolute; top: 0.5rem; right: 0.7rem; background: none; border: none; cursor: pointer; color: var(–ink3); font-size: 1rem; }
+
+.av0{background:#1a5c3a}.av1{background:#c26b00}.av2{background:#1a6b6b}.av3{background:#6b1a5c}
+.av4{background:#3a1a6b}.av5{background:#6b3a1a}.av6{background:#1a3a6b}.av7{background:#6b1a2a}
+.av8{background:#2a6b1a}.av9{background:#6b5c1a}.av10{background:#1a5c6b}.av11{background:#5c6b1a}
+.av12{background:#6b1a5c}.av13{background:#1a2a6b}.av14{background:#6b2a1a}.av15{background:#1a6b3a}
+.av16{background:#5c1a6b}.av17{background:#6b1a1a}.av18{background:#1a4a6b}.av19{background:#4a6b1a}
+.av20{background:#6b4a1a}.av21{background:#1a6b5c}.av22{background:#6b1a4a}.av23{background:#3a6b1a}
+
+@media(max-width:800px){ .app-body{grid-template-columns:1fr;} .sidebar{border-right:none;border-bottom:1px solid var(–border);} }
+</style>
+
+</head>
+<body>
+
+<div id="loading-screen">
+  <div class="spinner"></div>
+  <p>Conectando con la base de datos…</p>
+</div>
+
+<div id="login-screen">
+  <div class="login-box">
+    <h2>Acceso Admin</h2>
+    <p>Ingresa la contraseña para gestionar vacaciones</p>
+    <input type="password" id="pw-input" placeholder="Contraseña" onkeydown="if(event.key==='Enter')tryLogin()">
+    <button class="btn-primary" onclick="tryLogin()">Ingresar</button>
+    <div class="login-error" id="login-error"></div>
+    <button class="btn-cancel" onclick="closeLogin()">Cancelar</button>
+  </div>
+</div>
+
+<div id="day-popup">
+  <button class="popup-close" onclick="closePopup()">✕</button>
+  <h4 id="popup-date">—</h4>
+  <div class="popup-names" id="popup-names"></div>
+  <div class="popup-status" id="popup-status"></div>
+</div>
+
+<header>
+  <div class="brand">
+    <h1>Anestesiología · Vacaciones</h1>
+    <p>Clínica de Marly — <span id="year-label">2025</span></p>
+  </div>
+  <div class="header-right">
+    <div class="badge green">24 médicos</div>
+    <div class="badge amber">Máx. 2–3 simultáneos</div>
+    <div class="badge" id="sync-badge" style="background:#e8f0ff;color:#1a3a8f;border-color:#aac0f0;">● Conectando…</div>
+    <div class="badge" id="role-badge">Vista pública</div>
+    <button class="role-btn" id="role-btn" onclick="handleRoleBtn()">🔒 Admin</button>
+  </div>
+</header>
+
+<div class="app-body">
+  <div class="sidebar">
+    <div class="sidebar-section">
+      <h3>Referencia</h3>
+      <div class="legend-items">
+        <div class="legend-row"><div class="lsq free"></div>Disponible (0–1)</div>
+        <div class="legend-row"><div class="lsq warn"></div>Casi lleno (2)</div>
+        <div class="legend-row"><div class="lsq full"></div>Completo (3+)</div>
+        <div class="legend-row"><div class="lsq mine"></div>Médico seleccionado</div>
+      </div>
+    </div>
+    <div class="sidebar-section">
+      <h3>Equipo</h3>
+      <div id="doctors-list"></div>
+    </div>
+  </div>
+
+  <div class="main-content">
+    <div class="toolbar">
+      <select id="year-sel" onchange="changeYear()"></select>
+      <button class="btn-outline" onclick="changeViewMode('all')">Año completo</button>
+      <button class="btn-outline" onclick="prevNav()">← Anterior</button>
+      <button class="btn-outline" onclick="nextNav()">Siguiente →</button>
+    </div>
+
+```
+<div id="admin-panel">
+  <h3>⊕ Asignar vacaciones</h3>
+  <div class="admin-form">
+    <div class="form-group">
+      <label>Médico</label>
+      <select id="sel-doctor" onchange="updatePreview()"><option value="">— Seleccionar —</option></select>
+    </div>
+    <div class="form-group">
+      <label>Desde</label>
+      <input type="date" id="sel-start" onchange="updatePreview()">
+    </div>
+    <div class="form-group">
+      <label>Hasta</label>
+      <input type="date" id="sel-end" onchange="updatePreview()">
+    </div>
+    <div class="form-group">
+      <label>Días calendario</label>
+      <div class="days-preview" id="days-preview">—</div>
+    </div>
+    <button class="btn-sm green" onclick="assignVacation()">Asignar</button>
+  </div>
+  <div class="assign-status" id="assign-status"></div>
+</div>
+
+<div id="doctor-detail">
+  <div class="detail-header">
+    <div class="detail-avatar" id="detail-avatar"></div>
+    <div>
+      <div class="detail-name" id="detail-name"></div>
+      <div class="detail-sub" id="detail-sub"></div>
+    </div>
+  </div>
+  <div class="progress-bar"><div class="progress-fill" id="detail-bar"></div></div>
+  <div class="vac-list" id="detail-vac-list"></div>
+</div>
+
+<div class="months-grid" id="months-grid"></div>
+```
+
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, doc, getDoc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyChxX6E972Rl-vPnKa4rirWtPYUPzhuo4w",
+  authDomain: "vacaciones-marly.firebaseapp.com",
+  projectId: "vacaciones-marly",
+  storageBucket: "vacaciones-marly.firebasestorage.app",
+  messagingSenderId: "325344714783",
+  appId: "1:325344714783:web:d1316dc10b5357f9ffb52a"
+};
+
+const fbApp = initializeApp(firebaseConfig);
+const db = getFirestore(fbApp);
+const DOC_REF = doc(db, "vacaciones", "datos");
+
+const ADMIN_PASSWORD = 'marly2025';
+const MAX_SOFT = 2, MAX_HARD = 3, MAX_DAYS = 21;
+const NAMES = [
+  'Leonardo Cendales','Andrés Ruiz','Enrique Lopierre','Mauricio Pérez',
+  'Laura Tobos','Luisa Aguirre','Andrés Diaz','JB Silva',
+  'Carmen Teresa Mojica','Luis Eduardo Silva','Alexandra Vargas','María José Cantillo',
+  'Juan Manuel Arias','Germán Gutiérrez','Cristian Chamorro','Juan Carlos Téllez',
+  'Angela Taborda','Edna Cruz','Luis Fernando Álvarez','Rafael Turriago',
+  'Carlos Higuera','Juan Pablo Castañeda','María Cecilia García','José Luis Pay'
+];
+const MONTHS_ES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+const DAYS_SHORT = ['Lu','Ma','Mi','Ju','Vi','Sa','Do'];
+const COLOR_MAP = ['#1a5c3a','#c26b00','#1a6b6b','#6b1a5c','#3a1a6b','#6b3a1a','#1a3a6b','#6b1a2a','#2a6b1a','#6b5c1a','#1a5c6b','#5c6b1a'];
+
+let isAdmin=false, selectedDoc=null, currentYear=2025, viewMode='all', vacData={};
+
+// ── SYNC ──
+function setSyncBadge(s){
+  const el=document.getElementById('sync-badge');
+  const states={ok:['● En línea','#2d7a4a','#e8f3ed','#b5d9c3'],saving:['● Guardando…','#c26b00','#fff3e0','#f0c98a'],error:['● Sin conexión','#b83232','#fdeaea','#f0b0b0'],connecting:['● Conectando…','#1a3a8f','#e8f0ff','#aac0f0']};
+  const [txt,col,bg,bc]=states[s]||states.connecting;
+  el.textContent=txt; el.style.color=col; el.style.background=bg; el.style.borderColor=bc;
+}
+
+async function saveToFirebase(){
+  setSyncBadge('saving');
+  try{ await setDoc(DOC_REF,{vacaciones:JSON.stringify(vacData),updatedAt:new Date().toISOString()}); setSyncBadge('ok'); }
+  catch(e){ console.error(e); setSyncBadge('error'); showAssignStatus('err','Error al guardar. Verifica tu conexión.'); }
+}
+
+function startRealtimeListener(){
+  onSnapshot(DOC_REF,(snap)=>{
+    vacData = snap.exists() ? (JSON.parse(snap.data().vacaciones||'{}')) : {};
+    setSyncBadge('ok'); renderAll();
+  },(err)=>{ console.error(err); setSyncBadge('error'); });
+}
+
+async function init(){
+  try{
+    const snap=await getDoc(DOC_REF);
+    vacData = snap.exists() ? JSON.parse(snap.data().vacaciones||'{}') : {};
+    document.getElementById('loading-screen').style.display='none';
+    setSyncBadge('ok'); startRealtimeListener(); renderAll();
+  }catch(e){
+    console.error(e);
+    document.getElementById('loading-screen').innerHTML='<div style="text-align:center;padding:2rem;"><p style="color:#b83232;font-size:0.9rem;margin-bottom:0.5rem;">⚠ No se pudo conectar con Firebase</p><p style="color:#9a9590;font-size:0.75rem;">Verifica las reglas de Firestore y recarga la página.</p></div>';
+  }
+}
+
+// ── UTIL ──
+function parseDate(s){const[y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d);}
+function isWeekend(s){const d=parseDate(s);return d.getDay()===0||d.getDay()===6;}
+function totalDays(s,e){return Math.round((parseDate(e)-parseDate(s))/86400000)+1;}
+function allDates(s,e){const dates=[],c=new Date(parseDate(s)),end=parseDate(e);while(c<=end){dates.push(c.toISOString().slice(0,10));c.setDate(c.getDate()+1);}return dates;}
+function getVacs(id){return vacData[String(id)]||[];}
+function usedDays(id){return getVacs(id).reduce((a,v)=>a+totalDays(v.start,v.end),0);}
+function avatarInitials(n){const p=n.split(' ');return p[0][0]+(p[1]?p[1][0]:'');}
+function buildOccMap(){const m={};NAMES.forEach((_,id)=>{getVacs(id).forEach(v=>{allDates(v.start,v.end).forEach(d=>{if(!m[d])m[d]=[];m[d].push(id);});});});return m;}
+
+// ── LOGIN ──
+window.handleRoleBtn=()=>isAdmin?logOut():openLogin();
+window.openLogin=()=>{document.getElementById('login-screen').classList.add('visible');document.getElementById('pw-input').focus();};
+window.closeLogin=()=>{document.getElementById('login-screen').classList.remove('visible');document.getElementById('pw-input').value='';document.getElementById('login-error').textContent='';};
+window.tryLogin=()=>{
+  if(document.getElementById('pw-input').value===ADMIN_PASSWORD){isAdmin=true;closeLogin();applyRole();renderAll();}
+  else{document.getElementById('login-error').textContent='Contraseña incorrecta.';document.getElementById('pw-input').value='';}
+};
+function logOut(){isAdmin=false;selectedDoc=null;applyRole();renderAll();}
+function applyRole(){
+  const btn=document.getElementById('role-btn'),badge=document.getElementById('role-badge'),panel=document.getElementById('admin-panel');
+  if(isAdmin){btn.textContent='🔓 Salir Admin';btn.classList.add('active');badge.textContent='Administrador';badge.className='badge admin';panel.classList.add('visible');}
+  else{btn.textContent='🔒 Admin';btn.classList.remove('active');badge.textContent='Vista pública';badge.className='badge';panel.classList.remove('visible');document.getElementById('doctor-detail').classList.remove('visible');}
+}
+
+// ── DOCTORS ──
+function renderDoctors(){
+  const el=document.getElementById('doctors-list');el.innerHTML='';
+  NAMES.forEach((name,id)=>{
+    const used=usedDays(id),pct=Math.min((used/MAX_DAYS)*100,100);
+    const bc=used>=MAX_DAYS?'#b83232':used>=MAX_DAYS*0.7?'#c26b00':'#1a5c3a';
+    const div=document.createElement('div');div.className='doctor-item'+(selectedDoc===id?' selected':'');div.onclick=()=>selectDoc(id);
+    div.innerHTML=`<div class="doctor-avatar av${id%24}">${avatarInitials(name)}</div><div class="doctor-info"><div class="doctor-name-sm">${name}</div><div class="doctor-days-sm">${used}/${MAX_DAYS} días</div><div class="doctor-mini-bar"><div class="doctor-mini-fill" style="width:${pct}%;background:${bc}"></div></div></div>`;
+    el.appendChild(div);
+  });
+}
+
+function selectDoc(id){
+  selectedDoc=selectedDoc===id?null:id;
+  if(isAdmin&&selectedDoc!==null)document.getElementById('sel-doctor').value=selectedDoc;
+  renderDoctors();renderDocDetail();renderCalendar();
+}
+
+// ── DOCTOR DETAIL ──
+function renderDocDetail(){
+  const panel=document.getElementById('doctor-detail');
+  if(selectedDoc===null){panel.classList.remove('visible');return;}
+  panel.classList.add('visible');
+  const id=selectedDoc,name=NAMES[id],used=usedDays(id),pct=Math.min((used/MAX_DAYS)*100,100);
+  const bc=used>=MAX_DAYS?'#b83232':used>=MAX_DAYS*0.7?'#c26b00':'#1a5c3a';
+  const av=document.getElementById('detail-avatar');av.className=`detail-avatar av${id%24}`;av.textContent=avatarInitials(name);
+  document.getElementById('detail-name').textContent=name;
+  document.getElementById('detail-sub').textContent=`${used} de ${MAX_DAYS} días calendario · ${Math.max(0,MAX_DAYS-used)} restantes`;
+  document.getElementById('detail-bar').style.cssText=`width:${pct}%;background:${bc}`;
+  const list=document.getElementById('detail-vac-list');list.innerHTML='';
+  const vacs=getVacs(id);
+  if(!vacs.length){list.innerHTML='<div style="font-size:0.7rem;color:var(--ink3)">Sin vacaciones asignadas.</div>';return;}
+  vacs.forEach((v,idx)=>{
+    const row=document.createElement('div');row.className='vac-row';
+    row.innerHTML=`<span class="vac-range">${v.start} → ${v.end}</span><span class="vac-days-count">${totalDays(v.start,v.end)} días</span>${isAdmin?`<button class="btn-del" title="Eliminar" onclick="window.deleteVac(${id},${idx})">✕</button>`:''}`;
+    list.appendChild(row);
+  });
+}
+
+window.deleteVac=async(docId,idx)=>{
+  if(!isAdmin)return;
+  if(!confirm(`¿Eliminar este período de vacaciones de ${NAMES[docId]}?`))return;
+  const key=String(docId);
+  if(!vacData[key])return;
+  vacData[key].splice(idx,1);
+  if(!vacData[key].length)delete vacData[key];
+  await saveToFirebase();
+};
+
+// ── ADMIN ASSIGN ──
+function populateDocSelect(){
+  const sel=document.getElementById('sel-doctor');sel.innerHTML='<option value="">— Seleccionar médico —</option>';
+  NAMES.forEach((name,id)=>{const o=document.createElement('option');o.value=id;o.textContent=name;sel.appendChild(o);});
+}
+window.updatePreview=()=>{
+  const s=document.getElementById('sel-start').value,e=document.getElementById('sel-end').value,el=document.getElementById('days-preview');
+  el.textContent=(s&&e&&s<=e)?totalDays(s,e)+' días':'—';
+};
+window.assignVacation=async()=>{
+  if(!isAdmin)return;
+  const sv=document.getElementById('sel-doctor').value;
+  if(!sv)return showAssignStatus('err','Selecciona un médico.');
+  const docId=+sv,start=document.getElementById('sel-start').value,end=document.getElementById('sel-end').value;
+  if(!start||!end)return showAssignStatus('err','Ingresa las fechas.');
+  if(start>end)return showAssignStatus('err','La fecha de inicio es posterior al fin.');
+  const days=totalDays(start,end),used=usedDays(docId);
+  if(used+days>MAX_DAYS)return showAssignStatus('err',`Excede el límite. Disponibles: ${MAX_DAYS-used} días.`);
+  const occ=buildOccMap();let blocked=[],warnDays=[];
+  allDates(start,end).forEach(d=>{
+    if(isWeekend(d))return;
+    const cnt=(occ[d]||[]).filter(x=>x!==docId).length;
+    if(cnt>=MAX_HARD)blocked.push(d);else if(cnt===MAX_SOFT)warnDays.push(d);
+  });
+  if(blocked.length>0)return showAssignStatus('err',`Bloqueado: ${blocked.slice(0,2).join(', ')}${blocked.length>2?'…':''} ya tienen ${MAX_HARD} médicos.`);
+  const key=String(docId);
+  if(!vacData[key])vacData[key]=[];
+  vacData[key].push({start,end});
+  vacData[key].sort((a,b)=>a.start.localeCompare(b.start));
+  selectedDoc=docId;
+  await saveToFirebase();
+  if(warnDays.length>0)showAssignStatus('warn',`✓ Asignado. Atención: ${warnDays.length} día(s) llegan al límite de 3.`);
+  else showAssignStatus('ok',`✓ Vacaciones asignadas: ${days} días a ${NAMES[docId]}.`);
+};
+function showAssignStatus(t,m){const el=document.getElementById('assign-status');el.className='assign-status '+t;el.textContent=m;setTimeout(()=>el.textContent='',6000);}
+
+// ── CALENDAR ──
+function renderCalendar(){
+  const occ=buildOccMap(),grid=document.getElementById('months-grid');grid.innerHTML='';
+  const months=viewMode==='all'?Array.from({length:12},(_,i)=>i):[viewMode];
+  months.forEach(m=>grid.appendChild(buildMonth(currentYear,m,occ)));
+}
+function buildMonth(year,month,occ){
+  const dim=new Date(year,month+1,0).getDate();let peak=0;
+  for(let d=1;d<=dim;d++){const ds=`${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;peak=Math.max(peak,(occ[ds]||[]).length);}
+  const card=document.createElement('div');card.className='month-card';
+  card.innerHTML=`<div class="month-head"><span class="month-name">${MONTHS_ES[month]}</span><span class="month-peak">pico: ${peak} médico${peak!==1?'s':''}</span></div><div class="days-header">${DAYS_SHORT.map(d=>`<div class="dh">${d}</div>`).join('')}</div><div class="days-body" id="mb-${month}-${year}"></div>`;
+  const body=card.querySelector(`#mb-${month}-${year}`);
+  const fd=new Date(year,month,1).getDay(),offset=fd===0?6:fd-1;
+  for(let i=0;i<offset;i++){const e=document.createElement('div');e.className='day empty';body.appendChild(e);}
+  for(let d=1;d<=dim;d++){
+    const ds=`${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const docIds=occ[ds]||[],cnt=docIds.length,weekend=isWeekend(ds),isMine=selectedDoc!==null&&docIds.includes(selectedDoc);
+    let state='s-free';if(cnt>=MAX_HARD)state='s-full';else if(cnt>=MAX_SOFT)state='s-warn';if(isMine)state='s-mine';
+    const cell=document.createElement('div');cell.className=`day${weekend?' weekend':''} ${state}`;
+    const dots=docIds.slice(0,5).map(()=>'<div class="ddot"></div>').join('');
+    cell.innerHTML=`<div class="day-n">${d}</div><div class="day-dots">${dots}</div>`;
+    if(!weekend){cell.innerHTML+=`<div class="day-tooltip">${cnt} médico${cnt!==1?'s':''} ${cnt===0?'disponibles':'de vacaciones'}</div>`;cell.onclick=(e)=>showDayPopup(ds,docIds,e);}
+    body.appendChild(cell);
+  }
+  return card;
+}
+
+// ── DAY POPUP ──
+function showDayPopup(ds,docIds,event){
+  event.stopPropagation();
+  const popup=document.getElementById('day-popup');popup.style.display='block';
+  document.getElementById('popup-date').textContent=ds;
+  const namesEl=document.getElementById('popup-names');namesEl.innerHTML='';
+  if(!docIds.length){namesEl.innerHTML='<div style="font-size:0.7rem;color:var(--ink3)">Ningún médico de vacaciones.</div>';}
+  else{docIds.forEach(id=>{const row=document.createElement('div');row.className='popup-name-row';row.innerHTML=`<div class="popup-dot" style="background:${COLOR_MAP[id%12]}"></div><span>${NAMES[id]}</span>`;namesEl.appendChild(row);});}
+  const cnt=docIds.length,st=document.getElementById('popup-status');
+  if(cnt>=MAX_HARD){st.className='popup-status full';st.textContent=`⛔ Cupo completo (${cnt}/${MAX_HARD})`;}
+  else if(cnt>=MAX_SOFT){st.className='popup-status warn';st.textContent=`⚠ Al límite (${cnt}/${MAX_HARD}) — 1 lugar queda`;}
+  else{st.className='popup-status ok';st.textContent=`✓ Disponible — ${MAX_HARD-cnt} lugar${MAX_HARD-cnt!==1?'es':''} libres`;}
+  const rect=event.target.closest('.day').getBoundingClientRect();
+  let left=rect.left+window.scrollX;if(left+270>window.innerWidth)left=window.innerWidth-280;
+  popup.style.left=left+'px';popup.style.top=(rect.top+window.scrollY-175)+'px';
+}
+window.closePopup=()=>document.getElementById('day-popup').style.display='none';
+document.addEventListener('click',e=>{if(!e.target.closest('#day-popup')&&!e.target.closest('.day'))window.closePopup();});
+
+// ── NAVIGATION ──
+window.changeViewMode=m=>{viewMode=m;renderCalendar();};
+window.prevNav=()=>{if(viewMode==='all'){currentYear--;document.getElementById('year-sel').value=currentYear;document.getElementById('year-label').textContent=currentYear;}else{viewMode=(viewMode+11)%12;}renderCalendar();};
+window.nextNav=()=>{if(viewMode==='all'){currentYear++;document.getElementById('year-sel').value=currentYear;document.getElementById('year-label').textContent=currentYear;}else{viewMode=(viewMode+1)%12;}renderCalendar();};
+window.changeYear=()=>{currentYear=+document.getElementById('year-sel').value;document.getElementById('year-label').textContent=currentYear;renderCalendar();};
+
+const ys=document.getElementById('year-sel');
+[2024,2025,2026,2027].forEach(y=>{const o=document.createElement('option');o.value=y;o.textContent=y;if(y===currentYear)o.selected=true;ys.appendChild(o);});
+
+function renderAll(){
+  renderDoctors();renderDocDetail();renderCalendar();
+  if(isAdmin){populateDocSelect();if(selectedDoc!==null)document.getElementById('sel-doctor').value=selectedDoc;}
+}
+
+init();
+</script>
+
+</body>
+</html>
