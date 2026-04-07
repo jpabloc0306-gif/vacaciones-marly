@@ -329,11 +329,32 @@ async function init(){
 function parseDate(s){const[y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d);}
 function isWeekend(s){const d=parseDate(s);return d.getDay()===0||d.getDay()===6;}
 function totalDays(s,e){return Math.round((parseDate(e)-parseDate(s))/86400000)+1;}
-function allDates(s,e){const dates=[],c=new Date(parseDate(s)),end=parseDate(e);while(c<=end){dates.push(c.toISOString().slice(0,10));c.setDate(c.getDate()+1);}return dates;}
+function allDates(s,e){
+  const dates=[],c=new Date(parseDate(s)),end=parseDate(e);
+  while(c<=end){
+    const y=c.getFullYear(),mo=String(c.getMonth()+1).padStart(2,'0'),d=String(c.getDate()).padStart(2,'0');
+    dates.push(`${y}-${mo}-${d}`);
+    c.setDate(c.getDate()+1);
+  }
+  return dates;
+}
 function getVacs(id){return vacData[String(id)]||[];}
 function usedDays(id){return getVacs(id).reduce((a,v)=>a+totalDays(v.start,v.end),0);}
 function avatarInitials(n){const p=n.split(' ');return p[0][0]+(p[1]?p[1][0]:'');}
-function buildOccMap(){const m={};NAMES.forEach((_,id)=>{getVacs(id).forEach(v=>{allDates(v.start,v.end).forEach(d=>{if(!m[d])m[d]=[];m[d].push(id);});});});return m;}
+function buildOccMap(){
+  const m={};
+  NAMES.forEach((_,id)=>{
+    const vacs=vacData[String(id)]||[];
+    vacs.forEach(v=>{
+      if(!v.start||!v.end) return;
+      allDates(v.start,v.end).forEach(d=>{
+        if(!m[d])m[d]=[];
+        if(!m[d].includes(id))m[d].push(id);
+      });
+    });
+  });
+  return m;
+}
 
 // ── LOGIN ──
 window.handleRoleBtn=()=>isAdmin?logOut():openLogin();
