@@ -219,7 +219,7 @@ z-index: 399; backdrop-filter: blur(2px);
 <header>
   <div class="brand">
     <h1>Anestesiología · Vacaciones</h1>
-    <p>Clínica de Marly — <span id="year-label">2025</span></p>
+    <p>Clínica de Marly — <span id="year-label"></span></p>
   </div>
   <div class="header-right">
     <div class="badge green">24 médicos</div>
@@ -329,7 +329,7 @@ const MONTHS_ES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Ago
 const DAYS_SHORT = ['Lu','Ma','Mi','Ju','Vi','Sa','Do'];
 const COLOR_MAP = ['#1a5c3a','#c26b00','#1a6b6b','#6b1a5c','#3a1a6b','#6b3a1a','#1a3a6b','#6b1a2a','#2a6b1a','#6b5c1a','#1a5c6b','#5c6b1a'];
 
-let isAdmin=false, selectedDoc=null, currentYear=2025, viewMode='all', vacData={};
+let isAdmin=false, selectedDoc=null, currentYear=new Date().getFullYear(), viewMode='all', vacData={};
 
 // ── SYNC ──
 function setSyncBadge(s){
@@ -378,7 +378,11 @@ function allDates(s,e){
   return dates;
 }
 function getVacs(id){return vacData[String(id)]||[];}
-function usedDays(id){return getVacs(id).reduce((a,v)=>a+totalDays(v.start,v.end),0);}
+function usedDays(id){
+  return getVacs(id)
+    .filter(v=>v.start.startsWith(String(currentYear)))
+    .reduce((a,v)=>a+totalDays(v.start,v.end),0);
+}
 function avatarInitials(n){const p=n.split(' ');return p[0][0]+(p[1]?p[1][0]:'');}
 function buildOccMap(){
   const m={};
@@ -417,7 +421,7 @@ function renderDoctors(){
     const used=usedDays(id),pct=Math.min((used/MAX_DAYS)*100,100);
     const bc=used>=MAX_DAYS?'#b83232':used>=MAX_DAYS*0.7?'#c26b00':'#1a5c3a';
     const div=document.createElement('div');div.className='doctor-item'+(selectedDoc===id?' selected':'');div.onclick=()=>selectDoc(id);
-    div.innerHTML=`<div class="doctor-avatar av${id%24}">${avatarInitials(name)}</div><div class="doctor-info"><div class="doctor-name-sm">${name}</div><div class="doctor-days-sm">${used}/${MAX_DAYS} días</div><div class="doctor-mini-bar"><div class="doctor-mini-fill" style="width:${pct}%;background:${bc}"></div></div></div>`;
+    div.innerHTML=`<div class="doctor-avatar av${id%24}">${avatarInitials(name)}</div><div class="doctor-info"><div class="doctor-name-sm">${name}</div><div class="doctor-days-sm">${used}/${MAX_DAYS} días ${currentYear}</div><div class="doctor-mini-bar"><div class="doctor-mini-fill" style="width:${pct}%;background:${bc}"></div></div></div>`;
     el.appendChild(div);
   });
 }
@@ -437,7 +441,7 @@ function renderDocDetail(){
   const bc=used>=MAX_DAYS?'#b83232':used>=MAX_DAYS*0.7?'#c26b00':'#1a5c3a';
   const av=document.getElementById('detail-avatar');av.className=`detail-avatar av${id%24}`;av.textContent=avatarInitials(name);
   document.getElementById('detail-name').textContent=name;
-  document.getElementById('detail-sub').textContent=`${used} de ${MAX_DAYS} días calendario · ${Math.max(0,MAX_DAYS-used)} restantes`;
+  document.getElementById('detail-sub').textContent=`${used} de ${MAX_DAYS} días en ${currentYear} · ${Math.max(0,MAX_DAYS-used)} restantes`;
   document.getElementById('detail-bar').style.cssText=`width:${pct}%;background:${bc}`;
   const list=document.getElementById('detail-vac-list');list.innerHTML='';
   const vacs=getVacs(id);
@@ -476,7 +480,9 @@ window.assignVacation=async()=>{
   if(!start||!end)return showAssignStatus('err','Ingresa las fechas.');
   if(start>end)return showAssignStatus('err','La fecha de inicio es posterior al fin.');
   const days=totalDays(start,end),used=usedDays(docId);
-  if(used+days>MAX_DAYS)return showAssignStatus('err',`Excede el límite. Disponibles: ${MAX_DAYS-used} días.`);
+  const assignYear=start.slice(0,4);
+  const usedInYear=getVacs(docId).filter(v=>v.start.startsWith(assignYear)).reduce((a,v)=>a+totalDays(v.start,v.end),0);
+  if(usedInYear+days>MAX_DAYS)return showAssignStatus('err',`Excede el límite ${assignYear}. Disponibles: ${MAX_DAYS-usedInYear} días.`);
   const occ=buildOccMap();let blocked=[],warnDays=[];
   allDates(start,end).forEach(d=>{
     if(isWeekend(d))return;
@@ -585,9 +591,11 @@ window.nextNav=()=>{if(viewMode==='all'){currentYear++;document.getElementById('
 window.changeYear=()=>{currentYear=+document.getElementById('year-sel').value;document.getElementById('year-label').textContent=currentYear;renderCalendar();};
 
 const ys=document.getElementById('year-sel');
-[2024,2025,2026,2027].forEach(y=>{const o=document.createElement('option');o.value=y;o.textContent=y;if(y===currentYear)o.selected=true;ys.appendChild(o);});
+const startYear=new Date().getFullYear()-1;
+for(let y=startYear;y<=startYear+11;y++){const o=document.createElement('option');o.value=y;o.textContent=y;if(y===currentYear)o.selected=true;ys.appendChild(o);}
 
 function renderAll(){
+  document.getElementById('year-label').textContent=currentYear;
   renderDoctors();renderDocDetail();renderCalendar();
   if(isAdmin){populateDocSelect();if(selectedDoc!==null)document.getElementById('sel-doctor').value=selectedDoc;}
 }
