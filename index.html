@@ -243,6 +243,10 @@ z-index: 399; backdrop-filter: blur(2px);
     </div>
     <div class="sidebar-section">
       <h3>Equipo</h3>
+      <div style="margin-bottom:0.7rem;">
+        <select id="sidebar-year-sel" onchange="changeSidebarYear()" style="width:100%;padding:0.35rem 0.6rem;border:1.5px solid var(--border);border-radius:6px;font-family:'Instrument Sans',sans-serif;font-size:0.75rem;background:var(--card);color:var(--ink);cursor:pointer;">
+        </select>
+      </div>
       <div id="doctors-list"></div>
     </div>
   </div>
@@ -329,7 +333,7 @@ const MONTHS_ES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Ago
 const DAYS_SHORT = ['Lu','Ma','Mi','Ju','Vi','Sa','Do'];
 const COLOR_MAP = ['#1a5c3a','#c26b00','#1a6b6b','#6b1a5c','#3a1a6b','#6b3a1a','#1a3a6b','#6b1a2a','#2a6b1a','#6b5c1a','#1a5c6b','#5c6b1a'];
 
-let isAdmin=false, selectedDoc=null, currentYear=new Date().getFullYear(), viewMode='all', vacData={};
+let isAdmin=false, selectedDoc=null, currentYear=new Date().getFullYear(), sidebarYear=new Date().getFullYear(), viewMode='all', vacData={};
 
 // ── SYNC ──
 function setSyncBadge(s){
@@ -378,9 +382,10 @@ function allDates(s,e){
   return dates;
 }
 function getVacs(id){return vacData[String(id)]||[];}
-function usedDays(id){
+function usedDays(id, year){
+  const y=year||currentYear;
   return getVacs(id)
-    .filter(v=>v.start.startsWith(String(currentYear)))
+    .filter(v=>v.start.startsWith(String(y)))
     .reduce((a,v)=>a+totalDays(v.start,v.end),0);
 }
 function avatarInitials(n){const p=n.split(' ');return p[0][0]+(p[1]?p[1][0]:'');}
@@ -418,10 +423,10 @@ function applyRole(){
 function renderDoctors(){
   const el=document.getElementById('doctors-list');el.innerHTML='';
   NAMES.forEach((name,id)=>{
-    const used=usedDays(id),pct=Math.min((used/MAX_DAYS)*100,100);
+    const used=usedDays(id,sidebarYear),pct=Math.min((used/MAX_DAYS)*100,100);
     const bc=used>=MAX_DAYS?'#b83232':used>=MAX_DAYS*0.7?'#c26b00':'#1a5c3a';
     const div=document.createElement('div');div.className='doctor-item'+(selectedDoc===id?' selected':'');div.onclick=()=>selectDoc(id);
-    div.innerHTML=`<div class="doctor-avatar av${id%24}">${avatarInitials(name)}</div><div class="doctor-info"><div class="doctor-name-sm">${name}</div><div class="doctor-days-sm">${used}/${MAX_DAYS} días ${currentYear}</div><div class="doctor-mini-bar"><div class="doctor-mini-fill" style="width:${pct}%;background:${bc}"></div></div></div>`;
+    div.innerHTML=`<div class="doctor-avatar av${id%24}">${avatarInitials(name)}</div><div class="doctor-info"><div class="doctor-name-sm">${name}</div><div class="doctor-days-sm">${used}/${MAX_DAYS} días ${sidebarYear}</div><div class="doctor-mini-bar"><div class="doctor-mini-fill" style="width:${pct}%;background:${bc}"></div></div></div>`;
     el.appendChild(div);
   });
 }
@@ -593,6 +598,11 @@ window.changeYear=()=>{currentYear=+document.getElementById('year-sel').value;do
 const ys=document.getElementById('year-sel');
 const startYear=new Date().getFullYear()-1;
 for(let y=startYear;y<=startYear+11;y++){const o=document.createElement('option');o.value=y;o.textContent=y;if(y===currentYear)o.selected=true;ys.appendChild(o);}
+
+// Sidebar year selector
+const sys=document.getElementById('sidebar-year-sel');
+for(let y=startYear;y<=startYear+11;y++){const o=document.createElement('option');o.value=y;o.textContent=y;if(y===sidebarYear)o.selected=true;sys.appendChild(o);}
+window.changeSidebarYear=()=>{sidebarYear=+document.getElementById('sidebar-year-sel').value;renderDoctors();};
 
 function renderAll(){
   document.getElementById('year-label').textContent=currentYear;
