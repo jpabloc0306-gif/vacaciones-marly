@@ -111,12 +111,13 @@ a{color:var(--accent);}
     <div class="card-title">Leyenda del Excel</div>
     <div class="legend">
       <div class="leg"><div class="leg-dot" style="background:#375623"></div>Turno noche</div>
+      <div class="leg"><div class="leg-dot" style="background:#375623;border:2px solid #C00000"></div>Turno — de vacaciones (cuadrar)</div>
       <div class="leg"><div class="leg-dot" style="background:#BFBFBF"></div>Posturno</div>
       <div class="leg"><div class="leg-dot" style="background:#F4B183"></div>Posición vacía</div>
       <div class="leg"><div class="leg-dot" style="background:#FFE0CC"></div>Disp. turno robado</div>
       <div class="leg"><div class="leg-dot" style="background:#DCE6F1"></div>Disp. secuencia</div>
       <div class="leg"><div class="leg-dot" style="background:#E2EFDA"></div>Disp. paga turno</div>
-      <div class="leg"><div class="leg-dot" style="background:#FFEB9C;border:1px solid #ccc"></div>Disponibles (encabezado)</div>
+      <div class="leg"><div class="leg-dot" style="background:#FFEB9C;border:1px solid #ccc"></div>Disponibles</div>
       <div class="leg"><div class="leg-dot" style="background:#FCE4D6;border:1px solid #F0997B"></div>Festivo</div>
       <div class="leg"><div class="leg-dot" style="background:#EDEDED"></div>Fin de semana</div>
     </div>
@@ -128,11 +129,11 @@ a{color:var(--accent);}
 </div>
 
 <script>
-var PROJECT_ID = 'vacaciones-marly';
-var API_KEY = 'AIzaSyChxX6E972Rl-vPnKa4rirWtPYUPzhuo4w';
-var FIRESTORE_URL = 'https://firestore.googleapis.com/v1/projects/' + PROJECT_ID + '/databases/(default)/documents/vacaciones/datos?key=' + API_KEY;
+var PROJECT_ID='vacaciones-marly';
+var API_KEY='AIzaSyChxX6E972Rl-vPnKa4rirWtPYUPzhuo4w';
+var FIRESTORE_URL='https://firestore.googleapis.com/v1/projects/'+PROJECT_ID+'/databases/(default)/documents/vacaciones/datos?key='+API_KEY;
 
-var NAMES = [
+var NAMES=[
   'Leonardo Cendales','Andrés Ruiz','Enrique Lopierre','Mauricio Pérez',
   'Laura Tobos','Luisa Aguirre','Andrés Diaz','JB Silva',
   'Carmen Teresa Mojica','Luis Eduardo Silva','Alexandra Vargas','María José Cantillo',
@@ -140,7 +141,7 @@ var NAMES = [
   'Angela Taborda','Edna Cruz','Luis Fernando Álvarez','Rafael Turriago',
   'Carlos Higuera','Juan Pablo Castañeda','María Cecilia García','José Luis Pay'
 ];
-var NAME_TO_KEY = {
+var NAME_TO_KEY={
   'Leonardo Cendales':'Cendales','Andrés Ruiz':'Ruiz','Enrique Lopierre':'Lopierre',
   'Mauricio Pérez':'Perez','Laura Tobos':'Tobos','Luisa Aguirre':'Aguirre',
   'Andrés Diaz':'Diaz','JB Silva':'JB Silva','Carmen Teresa Mojica':'Mojica',
@@ -150,27 +151,30 @@ var NAME_TO_KEY = {
   'Luis Fernando Álvarez':'Alvarez','Rafael Turriago':'Turriago','Carlos Higuera':'Higuera',
   'Juan Pablo Castañeda':'Castaneda','María Cecilia García':'Garcia','José Luis Pay':'Pay'
 };
+// Inverso: key -> nombre completo
+var KEY_TO_FULLNAME={};
+Object.keys(NAME_TO_KEY).forEach(function(fn){KEY_TO_FULLNAME[NAME_TO_KEY[fn]]=fn;});
 
-var allVacaciones = [];
+var allVacaciones=[];
 
-function setSyncState(s) {
+function setSyncState(s){
   var dot=document.getElementById('sync-dot'),label=document.getElementById('sync-label');
   if(s==='ok'){dot.className='sync-dot ok';label.textContent='Sincronizado con vacaciones-marly';}
   else if(s==='err'){dot.className='sync-dot err';label.textContent='Error al conectar';}
   else{dot.className='sync-dot';label.textContent='Cargando vacaciones…';}
 }
 
-function parseFirestoreValue(val) {
-  if(!val) return null;
-  if(val.stringValue!==undefined) return val.stringValue;
-  if(val.integerValue!==undefined) return parseInt(val.integerValue);
-  if(val.booleanValue!==undefined) return val.booleanValue;
-  if(val.arrayValue!==undefined) return (val.arrayValue.values||[]).map(parseFirestoreValue);
+function parseFirestoreValue(val){
+  if(!val)return null;
+  if(val.stringValue!==undefined)return val.stringValue;
+  if(val.integerValue!==undefined)return parseInt(val.integerValue);
+  if(val.booleanValue!==undefined)return val.booleanValue;
+  if(val.arrayValue!==undefined)return(val.arrayValue.values||[]).map(parseFirestoreValue);
   if(val.mapValue!==undefined){var obj={};var fields=val.mapValue.fields||{};Object.keys(fields).forEach(function(k){obj[k]=parseFirestoreValue(fields[k]);});return obj;}
   return null;
 }
 
-function parseVacData(raw) {
+function parseVacData(raw){
   var result=[];
   Object.keys(raw).forEach(function(idxStr){
     var idx=parseInt(idxStr),fullName=NAMES[idx],key=NAME_TO_KEY[fullName],vacs=raw[idxStr];
@@ -182,7 +186,7 @@ function parseVacData(raw) {
 
 function formatDate(str){var p=str.split('-');return p[2]+'/'+p[1]+'/'+p[0];}
 
-function cargarVacaciones() {
+function cargarVacaciones(){
   setSyncState('loading');
   fetch(FIRESTORE_URL)
     .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json();})
@@ -196,7 +200,7 @@ function cargarVacaciones() {
     .catch(function(e){console.error(e);setSyncState('err');document.getElementById('vac-list').innerHTML='<p class="vac-empty">Error al cargar.</p>';});
 }
 
-function renderVacaciones() {
+function renderVacaciones(){
   var mes=parseInt(document.getElementById('mes').value),año=parseInt(document.getElementById('año').value);
   var filter=(document.getElementById('vac-filter').value||'').toLowerCase();
   var mesStr=String(mes).padStart(2,'0');
@@ -271,10 +275,20 @@ function buildDay(d){
   var ha=db2(H_ANC,ay)%17===0,ra=db2(R_ANC,ay)%17===0;
   var pr=ha?'Higuera':(ra?'Ruiz':null),ps=s10?getName(s10,'N',w):'',pd=pr||ps;
   var pm={};for(var i=1;i<=16;i++)pm[i]='';
-  if(spec){pm[9]=tf;pm[10]=pd;return{pm:pm,tf:tf,r:[],sq:[],pg:[],nr:[],spec:true,fds:fds,fest:fest};}
-  ROTATE_SEQ.forEach(function(s){var p=getPos(s,d),nd=getName(s,col,w);if(p===9)pm[9]=tf;else if(p===10)pm[10]=pd;else{if(nd===tf||nd===pd)pm[p]='';else pm[p]=nd;}});
+
+  // turnoVac: true si el doctor de turno está de vacaciones ese día
+  var turnoVac=isVac(tf,ds);
+
+  if(spec){pm[9]=tf;pm[10]=pd;return{pm:pm,tf:tf,turnoVac:turnoVac,r:[],sq:[],pg:[],nr:[],spec:true,fds:fds,fest:fest};}
+  ROTATE_SEQ.forEach(function(s){var p=getPos(s,d),nd=getName(s,col,w);
+    if(p===9)pm[9]=tf; // siempre ponemos el turno aunque esté de vacaciones
+    else if(p===10)pm[10]=pd;
+    else{if(nd===tf||nd===pd)pm[p]='';else pm[p]=nd;}
+  });
   pm[14]=PLANTILLA[14][col]||'';
-  for(var p=1;p<=16;p++){if(pm[p]&&isVac(pm[p],ds))pm[p]='';}
+  // Limpiar posiciones (NO la 9 — el turno siempre se muestra)
+  for(var p=1;p<=16;p++){if(p!==9&&pm[p]&&isVac(pm[p],ds))pm[p]='';}
+
   var occ={};Object.keys(pm).forEach(function(k){if(pm[k])occ[pm[k]]=true;});occ[tf]=true;
   var r=[];
   if(desp&&vendria(desp,col,w)&&!occ[desp]&&!isVac(desp,ds))ain(r,desp);
@@ -295,54 +309,43 @@ function buildDay(d){
   if(col==='X')dl=dl.filter(function(x){return x!==(w==='A'?'Garcia':'Chamorro');});
   if(col==='V')dl=dl.filter(function(x){return x!==(w==='A'?'Turriago':'Perez');});
   var nr=dl.filter(function(doc){return !u3[doc]&&!isVac(doc,ds);});
-  return{pm:pm,tf:tf,r:r,sq:sq,pg:pg,nr:nr,spec:false,fds:false,fest:false};
+  return{pm:pm,tf:tf,turnoVac:turnoVac,r:r,sq:sq,pg:pg,nr:nr,spec:false,fds:false,fest:false};
 }
 
 // ── ESTILOS EXCEL ──
-function makeStyle(bgRgb, fontRgb, bold, italic) {
-  var s = {
-    fill: bgRgb ? { fgColor: { rgb: bgRgb } } : { fgColor: { rgb: 'FFFFFFFF' } },
-    font: { name: 'Arial', sz: 9, bold: bold||false, italic: italic||false, color: { rgb: fontRgb||'FF000000' } },
-    alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
-    border: {
-      top: { style: 'thin', color: { rgb: 'FFBFBFBF' } },
-      bottom: { style: 'thin', color: { rgb: 'FFBFBFBF' } },
-      left: { style: 'thin', color: { rgb: 'FFBFBFBF' } },
-      right: { style: 'thin', color: { rgb: 'FFBFBFBF' } }
-    }
+var THIN={style:'thin',color:{rgb:'FFBFBFBF'}};
+var BORDER={top:THIN,bottom:THIN,left:THIN,right:THIN};
+
+function makeStyle(bgRgb,fontRgb,bold,italic,leftAlign){
+  return{
+    fill:{fgColor:{rgb:bgRgb||'FFFFFFFF'}},
+    font:{name:'Arial',sz:9,bold:bold||false,italic:italic||false,color:{rgb:fontRgb||'FF000000'}},
+    alignment:{horizontal:leftAlign?'left':'center',vertical:'center',wrapText:true},
+    border:BORDER
   };
-  return s;
 }
 
-function makeCell(val, style) {
-  return { v: val||'', t: 's', s: style };
+function cell(val,bgRgb,fontRgb,bold,italic,leftAlign){
+  return{v:val||'',t:'s',s:makeStyle(bgRgb,fontRgb,bold,italic,leftAlign)};
 }
 
-// Colores
-var C = {
-  HDR:    { bg: 'FF1F4E79', fg: 'FFFFFFFF', bold: true },
-  TURNO:  { bg: 'FF375623', fg: 'FFFFFFFF', bold: true },
-  POSTURNO: { bg: 'FFBFBFBF', fg: 'FF3F3F3F', bold: true },
-  FESTIVO:{ bg: 'FFFCE4D6', fg: 'FFC00000', bold: true },
-  FDS:    { bg: 'FFEDEDED', fg: 'FF595959', bold: true },
-  FIJA:   { bg: 'FFF2F2F2', fg: 'FF000000', italic: true },
-  NARANJA:{ bg: 'FFF4B183', fg: 'FF000000', bold: false },
-  ROBADO: { bg: 'FFFFE0CC', fg: 'FF7F3000', bold: true },
-  DISPSEQ:{ bg: 'FFDCE6F1', fg: 'FF1F4E79', bold: true },
-  PAGA:   { bg: 'FFE2EFDA', fg: 'FF375623', bold: true },
-  DISP_HDR:{ bg: 'FFFFEB9C', fg: 'FF7F4E00', bold: true },
-  NEGRO:  { bg: 'FF000000', fg: 'FFFFFFFF', bold: false },
-  NORMAL: { bg: 'FFFFFFFF', fg: 'FF000000', bold: false },
-  LEFT:   { bg: 'FFFFFFFF', fg: 'FF000000', bold: false, align: 'left' },
+// Paleta
+var BG={
+  HDR:'FF1F4E79',TURNO:'FF375623',POSTURNO:'FFBFBFBF',
+  FESTIVO:'FFFCE4D6',FDS:'FFEDEDED',FIJA:'FFF2F2F2',
+  NARANJA:'FFF4B183',ROBADO:'FFFFE0CC',DISPSEQ:'FFDCE6F1',
+  PAGA:'FFE2EFDA',DISP_HDR:'FFFFEB9C',NEGRO:'FF000000',
+  WHITE:'FFFFFFFF',GRAY14:'FF7F7F7F',VAC_HDR:'FFFDEAEA'
+};
+var FG={
+  WHITE:'FFFFFFFF',BLACK:'FF000000',HDR:'FFFFFFFF',
+  ROJO:'FFCC0000',TURNO:'FFFFFFFF',POSTURNO:'FF3F3F3F',
+  FESTIVO:'FFC00000',FDS:'FF595959',ROBADO:'FF7F3000',
+  DISPSEQ:'FF1F4E79',PAGA:'FF375623',DISP_HDR:'FF7F4E00',
+  VAC:'FF7F0000'
 };
 
-function cs(c, val, leftAlign) {
-  var s = makeStyle(c.bg, c.fg, c.bold, c.italic);
-  if(leftAlign || c.align === 'left') s.alignment.horizontal = 'left';
-  return makeCell(val, s);
-}
-
-function generarExcel() {
+function generarExcel(){
   var mes=parseInt(document.getElementById('mes').value);
   var año=parseInt(document.getElementById('año').value);
   var status=document.getElementById('status'),btn=document.getElementById('btn-gen');
@@ -352,65 +355,106 @@ function generarExcel() {
     try{
       var wb=XLSX.utils.book_new();
       var ws={};
-      var cols = ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W'];
-      // Posiciones: A=Fecha, B=Día, C-R=pos1-16, S=SEP, T=Robado, U=DispSeq, V=PagaTurno, W=Disp
+      var COLS=['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W'];
 
-      // Fila 1: título
-      ws['A1'] = cs(C.HDR, MESES[mes].toUpperCase()+' '+año);
-      ws['B1'] = cs(C.HDR, '');
+      // ── FILA 1: Título ──
+      ws['A1']=cell(MESES[mes].toUpperCase()+' '+año,BG.HDR,FG.WHITE,true);
+      ws['B1']=cell('',BG.HDR,FG.WHITE,true);
 
-      // Fila 2: headers
-      var hdrs = ['Fecha','Día','1','2','3','4','5','6','7','8','9\nTURNO','10\nPOSTURNO','11','12','13','14\nFIJA','15','16','','Disp.\nTurno Robado','Disp.\nSecuencia','Disp.\nPaga Turno','Disponibles'];
-      var hdrStyles = [C.HDR,C.HDR,C.HDR,C.HDR,C.HDR,C.HDR,C.HDR,C.HDR,C.HDR,C.HDR,C.TURNO,C.POSTURNO,C.HDR,C.HDR,C.HDR,{bg:'FF7F7F7F',fg:'FFFFFFFF',bold:true},C.HDR,C.HDR,C.NEGRO,C.ROBADO,C.DISPSEQ,C.PAGA,C.DISP_HDR];
+      // ── FILA 2: Headers ──
+      var hdrs=['Fecha','Día','1','2','3','4','5','6','7','8','9\nTURNO','10\nPOSTURNO','11','12','13','14\nFIJA','15','16','','Disp.\nTurno Robado','Disp.\nSecuencia','Disp.\nPaga Turno','Disponibles'];
+      var hBG=[BG.HDR,BG.HDR,BG.HDR,BG.HDR,BG.HDR,BG.HDR,BG.HDR,BG.HDR,BG.HDR,BG.HDR,BG.TURNO,BG.POSTURNO,BG.HDR,BG.HDR,BG.HDR,BG.GRAY14,BG.HDR,BG.HDR,BG.NEGRO,BG.ROBADO,BG.DISPSEQ,BG.PAGA,BG.DISP_HDR];
+      var hFG=[FG.WHITE,FG.WHITE,FG.WHITE,FG.WHITE,FG.WHITE,FG.WHITE,FG.WHITE,FG.WHITE,FG.WHITE,FG.WHITE,FG.WHITE,FG.POSTURNO,FG.WHITE,FG.WHITE,FG.WHITE,FG.WHITE,FG.WHITE,FG.WHITE,FG.WHITE,FG.ROBADO,FG.DISPSEQ,FG.PAGA,FG.DISP_HDR];
       for(var hi=0;hi<hdrs.length;hi++){
-        ws[cols[hi]+'2'] = cs(hdrStyles[hi], hdrs[hi], hi>=19);
+        ws[COLS[hi]+'2']=cell(hdrs[hi],hBG[hi],hFG[hi],true,false,hi>=19);
       }
 
-      // Filas de datos
+      // ── FILAS DE DATOS ──
       var dim=new Date(año,mes,0).getDate();
       for(var day=1;day<=dim;day++){
         var row=day+2;
         var d=new Date(año,mes-1,day),dow=d.getDay();
         var dn=DAY_NAMES[dow===0?6:dow-1];
-        var res=buildDay(d),pm=res.pm;
-        var isSpec=res.spec,isFds=res.fds,isFest=res.fest;
-        var dayC = isFest ? C.FESTIVO : (isFds ? C.FDS : C.NORMAL);
+        var res=buildDay(d);
+        var pm=res.pm,isFds=res.fds,isFest=res.fest,isSpec=res.spec;
+        var rowBG=isFest?BG.FESTIVO:(isFds?BG.FDS:BG.WHITE);
+        var rowFG=isFest?FG.FESTIVO:(isFds?FG.FDS:FG.BLACK);
 
-        ws['A'+row] = cs(dayC, day);
-        ws['B'+row] = cs(dayC, dn, true);
+        ws['A'+row]=cell(day,rowBG,rowFG,isFest||isFds);
+        ws['B'+row]=cell(dn,rowBG,rowFG,isFest||isFds,false,true);
 
-        // Posiciones 1-16 (cols C a R)
-        var posArr=[pm[1],pm[2],pm[3],pm[4],pm[5],pm[6],pm[7],pm[8],pm[9],pm[10],pm[11],pm[12],pm[13],pm[14],pm[15],pm[16]];
         for(var pi=0;pi<16;pi++){
           var posNum=pi+1;
-          var val=posArr[pi]||'';
-          var colLetter=cols[pi+2];
-          var cellStyle;
-          if(posNum===9) cellStyle=C.TURNO;
-          else if(posNum===10) cellStyle=C.POSTURNO;
-          else if(isFest) cellStyle=C.FESTIVO;
-          else if(isFds) cellStyle=C.FDS;
-          else if(posNum===14) cellStyle=C.FIJA;
-          else if(!val && !isSpec && posNum!==9 && posNum!==10) cellStyle=C.NARANJA;
-          else cellStyle=C.NORMAL;
-          ws[colLetter+row] = cs(cellStyle, val);
+          var val=pm[posNum]||'';
+          var colL=COLS[pi+2];
+          var bg,fg,bold=false,italic=false;
+
+          if(posNum===9){
+            bg=BG.TURNO;
+            // Si está de vacaciones → texto rojo en lugar de blanco
+            fg=res.turnoVac?FG.ROJO:FG.WHITE;
+            bold=true;
+          } else if(posNum===10){
+            bg=BG.POSTURNO;fg=FG.POSTURNO;bold=true;
+          } else if(isFest){
+            bg=BG.FESTIVO;fg=val?FG.FESTIVO:FG.FESTIVO;
+          } else if(isFds){
+            bg=BG.FDS;fg=val?FG.FDS:FG.FDS;
+          } else if(posNum===14){
+            bg=BG.FIJA;fg=FG.BLACK;italic=true;
+          } else if(!val&&!isSpec){
+            bg=BG.NARANJA;fg=FG.BLACK;
+          } else{
+            bg=BG.WHITE;fg=FG.BLACK;
+          }
+          ws[colL+row]=cell(val,bg,fg,bold,italic);
         }
 
         // Separador negro
-        ws['S'+row] = cs(C.NEGRO, '');
+        ws['S'+row]=cell('',BG.NEGRO,FG.WHITE);
 
         // Disponibles
-        ws['T'+row] = cs(res.r.length?C.ROBADO:C.NORMAL, res.r.join(', '), true);
-        ws['U'+row] = cs(res.sq.length?C.DISPSEQ:C.NORMAL, res.sq.join(', '), true);
-        ws['V'+row] = cs(res.pg.length?C.PAGA:C.NORMAL, res.pg.join(', '), true);
-        ws['W'+row] = cs(C.NORMAL, res.nr.join(', '), true);
+        ws['T'+row]=cell(res.r.join(', '),res.r.length?BG.ROBADO:BG.WHITE,res.r.length?FG.ROBADO:FG.BLACK,!!res.r.length,false,true);
+        ws['U'+row]=cell(res.sq.join(', '),res.sq.length?BG.DISPSEQ:BG.WHITE,res.sq.length?FG.DISPSEQ:FG.BLACK,!!res.sq.length,false,true);
+        ws['V'+row]=cell(res.pg.join(', '),res.pg.length?BG.PAGA:BG.WHITE,res.pg.length?FG.PAGA:FG.BLACK,!!res.pg.length,false,true);
+        ws['W'+row]=cell(res.nr.join(', '),BG.WHITE,FG.BLACK,false,false,true);
       }
 
-      // Rango
-      ws['!ref'] = 'A1:W'+(dim+2);
+      // ── LISTA DE VACACIONES AL FINAL ──
+      var mesStr=String(mes).padStart(2,'0');
+      var vacsDelMes=allVacaciones.filter(function(v){
+        return v.desde<=(año+'-'+mesStr+'-31')&&v.hasta>=(año+'-'+mesStr+'-01');
+      });
 
-      // Anchos
-      ws['!cols'] = [
+      var vacStartRow=dim+4; // 2 filas de espacio
+
+      // Encabezado vacaciones
+      ws['A'+vacStartRow]=cell('VACACIONES '+MESES[mes].toUpperCase()+' '+año,BG.VAC_HDR,FG.VAC,true);
+      ws['B'+vacStartRow]=cell('',BG.VAC_HDR,FG.VAC,true);
+      ws['C'+vacStartRow]=cell('Médico',BG.VAC_HDR,FG.VAC,true);
+      ws['D'+vacStartRow]=cell('',BG.VAC_HDR,FG.VAC,true);
+      ws['E'+vacStartRow]=cell('Desde',BG.VAC_HDR,FG.VAC,true);
+      ws['F'+vacStartRow]=cell('Hasta',BG.VAC_HDR,FG.VAC,true);
+      ws['G'+vacStartRow]=cell('Días',BG.VAC_HDR,FG.VAC,true);
+
+      if(vacsDelMes.length===0){
+        ws['C'+(vacStartRow+1)]=cell('Sin vacaciones registradas para este mes.',BG.WHITE,FG.BLACK,false,true,true);
+      } else {
+        vacsDelMes.forEach(function(v,idx){
+          var vrow=vacStartRow+1+idx;
+          var dias=Math.round((new Date(v.hasta)-new Date(v.desde))/86400000)+1;
+          ws['C'+vrow]=cell(v.fullName,BG.WHITE,FG.BLACK,false,false,true);
+          ws['D'+vrow]=cell('',BG.WHITE,FG.BLACK);
+          ws['E'+vrow]=cell(formatDate(v.desde),BG.WHITE,FG.BLACK);
+          ws['F'+vrow]=cell(formatDate(v.hasta),BG.WHITE,FG.BLACK);
+          ws['G'+vrow]=cell(String(dias)+' días',BG.WHITE,FG.BLACK);
+        });
+      }
+
+      var lastRow=vacStartRow+1+Math.max(vacsDelMes.length,1);
+      ws['!ref']='A1:W'+lastRow;
+
+      ws['!cols']=[
         {wch:6},{wch:11},
         {wch:10},{wch:10},{wch:10},{wch:10},{wch:10},{wch:10},{wch:10},{wch:10},
         {wch:12},{wch:12},
@@ -419,12 +463,11 @@ function generarExcel() {
         {wch:18},{wch:18},{wch:18},{wch:38}
       ];
 
-      // Altos de fila
-      ws['!rows'] = [{hpt:20},{hpt:30}];
-      for(var ri=0;ri<dim;ri++) ws['!rows'].push({hpt:18});
+      ws['!rows']=[{hpt:20},{hpt:30}];
+      for(var ri=0;ri<dim+10;ri++)ws['!rows'].push({hpt:18});
 
-      XLSX.utils.book_append_sheet(wb, ws, MESES[mes]+' '+año);
-      XLSX.writeFile(wb, 'Turnos_'+MESES[mes]+'_'+año+'.xlsx');
+      XLSX.utils.book_append_sheet(wb,ws,MESES[mes]+' '+año);
+      XLSX.writeFile(wb,'Turnos_'+MESES[mes]+'_'+año+'.xlsx');
       status.className='status success';
       status.textContent='✓ Generado: Turnos_'+MESES[mes]+'_'+año+'.xlsx';
     }catch(e){
