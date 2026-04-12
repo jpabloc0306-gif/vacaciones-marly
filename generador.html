@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Generador de Turnos · Anestesiología</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Instrument+Sans:wght@300;400;500;600&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#f5f3ee;--surface:#fff;--card:#faf9f6;
+  --border:#e2ddd5;--ink:#1a1916;--ink2:#5a5750;--ink3:#9a9590;
+  --accent:#1a5c3a;--accent-light:#e8f3ed;
+  --red:#b83232;--red-light:#fdeaea;
+  --shadow:0 1px 4px rgba(0,0,0,0.08),0 4px 16px rgba(0,0,0,0.04);
+  --radius:10px;
+}
+body{font-family:'Instrument Sans',sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;padding:2rem 1rem;}
+.container{max-width:860px;margin:0 auto;}
+header{text-align:center;margin-bottom:2.5rem;}
+header h1{font-family:'Instrument Serif',serif;font-size:2.4rem;color:var(--accent);margin-bottom:0.3rem;}
+header p{color:var(--ink3);font-size:0.85rem;}
+.sync-row{display:flex;align-items:center;justify-content:center;gap:0.5rem;margin-top:0.6rem;}
+.sync-dot{width:8px;height:8px;border-radius:50%;background:#c26b00;animation:pulse 1.5s infinite;}
+.sync-dot.ok{background:var(--accent);animation:none;}
+.sync-dot.err{background:var(--red);animation:none;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.4;}}
+.sync-label{font-size:0.75rem;color:var(--ink3);}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.5rem;margin-bottom:1.2rem;box-shadow:var(--shadow);}
+.card-title{font-size:0.65rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--ink3);margin-bottom:1rem;font-weight:600;}
+.row{display:flex;gap:1rem;flex-wrap:wrap;}
+.field{display:flex;flex-direction:column;gap:0.3rem;flex:1;min-width:130px;}
+label{font-size:0.75rem;color:var(--ink3);font-weight:500;}
+select,input[type=text]{font-family:'Instrument Sans',sans-serif;font-size:0.85rem;padding:0.55rem 0.8rem;border:1.5px solid var(--border);border-radius:7px;background:var(--card);color:var(--ink);outline:none;transition:border-color 0.15s;cursor:pointer;width:100%;}
+select:focus,input:focus{border-color:var(--accent);}
+.badge-count{background:var(--accent-light);color:var(--accent);border:1px solid #b5d9c3;padding:0.25rem 0.6rem;border-radius:20px;font-size:0.7rem;font-weight:600;margin-left:0.5rem;}
+.filter-row{display:flex;gap:0.6rem;align-items:center;flex-wrap:wrap;margin-bottom:0.75rem;}
+.vac-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(195px,1fr));gap:0.5rem;}
+.vac-card{background:var(--accent-light);border:1px solid #b5d9c3;border-radius:7px;padding:0.6rem 0.8rem;}
+.vac-card .doc-name{font-size:0.78rem;font-weight:600;color:var(--accent);margin-bottom:0.2rem;}
+.vac-card .vac-range{font-size:0.7rem;color:var(--ink2);}
+.vac-empty{font-size:0.82rem;color:var(--ink3);font-style:italic;padding:0.5rem 0;}
+.legend{display:flex;flex-wrap:wrap;gap:0.6rem;}
+.leg{display:flex;align-items:center;gap:0.4rem;font-size:0.72rem;color:var(--ink2);}
+.leg-dot{width:13px;height:13px;border-radius:3px;flex-shrink:0;}
+.btn-gen{font-family:'Instrument Sans',sans-serif;font-size:1rem;font-weight:600;padding:0.85rem 2rem;border-radius:var(--radius);border:none;cursor:pointer;background:var(--accent);color:white;width:100%;transition:all 0.15s;}
+.btn-gen:hover{background:#145030;transform:translateY(-1px);}
+.btn-gen:active{transform:translateY(0);}
+.btn-gen:disabled{background:var(--ink3);cursor:not-allowed;transform:none;}
+.btn-refresh{font-family:'Instrument Sans',sans-serif;font-size:0.75rem;padding:0.35rem 0.8rem;border-radius:6px;border:1.5px solid var(--border);background:var(--card);color:var(--ink2);cursor:pointer;transition:all 0.15s;}
+.btn-refresh:hover{border-color:var(--accent);color:var(--accent);}
+.status{text-align:center;padding:0.9rem;border-radius:var(--radius);font-size:0.85rem;margin-top:1rem;display:none;}
+.status.success{background:var(--accent-light);color:var(--accent);border:1px solid #b5d9c3;display:block;}
+.status.error{background:var(--red-light);color:var(--red);border:1px solid #f0b0b0;display:block;}
+.status.loading{background:#f0f0f0;color:var(--ink2);border:1px solid var(--border);display:block;}
+.hint{font-size:0.72rem;color:var(--ink3);}
+a{color:var(--accent);}
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>Generador de Turnos</h1>
+    <p>Anestesiología · Clínica de Marly</p>
+    <div class="sync-row">
+      <div class="sync-dot" id="sync-dot"></div>
+      <span class="sync-label" id="sync-label">Cargando vacaciones…</span>
+    </div>
+  </header>
+
+  <div class="card">
+    <div class="card-title">Período a generar</div>
+    <div class="row">
+      <div class="field">
+        <label>Mes</label>
+        <select id="mes" onchange="renderVacaciones()">
+          <option value="1">Enero</option><option value="2">Febrero</option>
+          <option value="3">Marzo</option><option value="4">Abril</option>
+          <option value="5">Mayo</option><option value="6">Junio</option>
+          <option value="7">Julio</option><option value="8">Agosto</option>
+          <option value="9">Septiembre</option><option value="10">Octubre</option>
+          <option value="11">Noviembre</option><option value="12">Diciembre</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Año</label>
+        <select id="año" onchange="renderVacaciones()">
+          <option value="2026" selected>2026</option>
+          <option value="2027">2027</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">
+      Vacaciones activas este mes
+      <span class="badge-count" id="vac-count">—</span>
+    </div>
+    <div class="filter-row">
+      <input type="text" id="vac-filter" placeholder="Buscar médico…" oninput="renderVacaciones()" style="max-width:200px;">
+      <button class="btn-refresh" onclick="cargarVacaciones()">↻ Actualizar</button>
+      <span class="hint">Desde <a href="https://jpabloc0306-gif.github.io/vacaciones-marly/" target="_blank">vacaciones-marly</a></span>
+    </div>
+    <div id="vac-list"><p class="vac-empty">Cargando…</p></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Leyenda del Excel</div>
+    <div class="legend">
+      <div class="leg"><div class="leg-dot" style="background:#375623"></div>Turno noche</div>
+      <div class="leg"><div class="leg-dot" style="background:#BFBFBF"></div>Posturno</div>
+      <div class="leg"><div class="leg-dot" style="background:#F4B183"></div>Posición vacía</div>
+      <div class="leg"><div class="leg-dot" style="background:#FFE0CC"></div>Disp. turno robado</div>
+      <div class="leg"><div class="leg-dot" style="background:#DCE6F1"></div>Disp. secuencia</div>
+      <div class="leg"><div class="leg-dot" style="background:#E2EFDA"></div>Disp. paga turno</div>
+      <div class="leg"><div class="leg-dot" style="background:#FFEB9C;border:1px solid #ccc"></div>Disponibles</div>
+      <div class="leg"><div class="leg-dot" style="background:#FCE4D6;border:1px solid #F0997B"></div>Festivo</div>
+      <div class="leg"><div class="leg-dot" style="background:#EDEDED"></div>Fin de semana</div>
+    </div>
+  </div>
+
+<button class="btn-gen" id="btn-gen" onclick="generarExcel()">⬇ Generar Excel</button>
+
+  <div id="status" class="status"></div>
+</div>
+
+<script>
+// Firestore REST API — lectura pública habilitada
+var PROJECT_ID = 'vacaciones-marly';
+var API_KEY = 'AIzaSyChxX6E972Rl-vPnKa4rirWtPYUPzhuo4w';
+var FIRESTORE_URL = 'https://firestore.googleapis.com/v1/projects/' + PROJECT_ID + '/databases/(default)/documents/vacaciones/datos?key=' + API_KEY;
+
+var NAMES = [
+  'Leonardo Cendales','Andrés Ruiz','Enrique Lopierre','Mauricio Pérez',
+  'Laura Tobos','Luisa Aguirre','Andrés Diaz','JB Silva',
+  'Carmen Teresa Mojica','Luis Eduardo Silva','Alexandra Vargas','María José Cantillo',
+  'Juan Manuel Arias','Germán Gutiérrez','Cristian Chamorro','Juan Carlos Téllez',
+  'Angela Taborda','Edna Cruz','Luis Fernando Álvarez','Rafael Turriago',
+  'Carlos Higuera','Juan Pablo Castañeda','María Cecilia García','José Luis Pay'
+];
+var NAME_TO_KEY = {
+  'Leonardo Cendales':'Cendales','Andrés Ruiz':'Ruiz','Enrique Lopierre':'Lopierre',
+  'Mauricio Pérez':'Perez','Laura Tobos':'Tobos','Luisa Aguirre':'Aguirre',
+  'Andrés Diaz':'Diaz','JB Silva':'JB Silva','Carmen Teresa Mojica':'Mojica',
+  'Luis Eduardo Silva':'LE Silva','Alexandra Vargas':'Vargas','María José Cantillo':'Cantillo',
+  'Juan Manuel Arias':'Arias','Germán Gutiérrez':'Gutierrez','Cristian Chamorro':'Chamorro',
+  'Juan Carlos Téllez':'Tellez','Angela Taborda':'Taborda','Edna Cruz':'Cruz',
+  'Luis Fernando Álvarez':'Alvarez','Rafael Turriago':'Turriago','Carlos Higuera':'Higuera',
+  'Juan Pablo Castañeda':'Castaneda','María Cecilia García':'Garcia','José Luis Pay':'Pay'
+};
+
+var allVacaciones = [];
+
+function setSyncState(s) {
+  var dot = document.getElementById('sync-dot');
+  var label = document.getElementById('sync-label');
+  if(s==='ok'){dot.className='sync-dot ok';label.textContent='Sincronizado con vacaciones-marly';}
+  else if(s==='err'){dot.className='sync-dot err';label.textContent='Error al conectar';}
+  else{dot.className='sync-dot';label.textContent='Cargando vacaciones…';}
+}
+
+function parseFirestoreValue(val) {
+  if(!val) return null;
+  if(val.stringValue !== undefined) return val.stringValue;
+  if(val.integerValue !== undefined) return parseInt(val.integerValue);
+  if(val.booleanValue !== undefined) return val.booleanValue;
+  if(val.arrayValue !== undefined) return (val.arrayValue.values || []).map(parseFirestoreValue);
+  if(val.mapValue !== undefined) {
+    var obj = {};
+    var fields = val.mapValue.fields || {};
+    Object.keys(fields).forEach(function(k){ obj[k] = parseFirestoreValue(fields[k]); });
+    return obj;
+  }
+  return null;
+}
+
+function parseVacData(raw) {
+  var result = [];
+  Object.keys(raw).forEach(function(idxStr) {
+    var idx = parseInt(idxStr);
+    var fullName = NAMES[idx];
+    var key = NAME_TO_KEY[fullName];
+    var vacs = raw[idxStr];
+    if(!key || !Array.isArray(vacs)) return;
+    vacs.forEach(function(v) {
+      if(v.start && v.end) result.push({doc:key, fullName:fullName, desde:v.start, hasta:v.end});
+    });
+  });
+  return result.sort(function(a,b){ return a.desde.localeCompare(b.desde); });
+}
+
+function formatDate(str) {
+  var p = str.split('-');
+  return p[2]+'/'+p[1]+'/'+p[0];
+}
+
+function cargarVacaciones() {
+  setSyncState('loading');
+  fetch(FIRESTORE_URL)
+    .then(function(r) {
+      if(!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    })
+    .then(function(data) {
+      if(!data.fields) throw new Error('Sin datos');
+      var vacStr = parseFirestoreValue(data.fields.vacaciones);
+      var raw = JSON.parse(vacStr || '{}');
+      allVacaciones = parseVacData(raw);
+      setSyncState('ok');
+      renderVacaciones();
+    })
+    .catch(function(e) {
+      console.error(e);
+      setSyncState('err');
+      document.getElementById('vac-list').innerHTML = '<p class="vac-empty">Error al cargar. Verifica tu conexión.</p>';
+      document.getElementById('vac-count').textContent = '—';
+    });
+}
+
+function renderVacaciones() {
+  var mes = parseInt(document.getElementById('mes').value);
+  var año = parseInt(document.getElementById('año').value);
+  var filter = (document.getElementById('vac-filter').value || '').toLowerCase();
+  var mesStr = String(mes).padStart(2,'0');
+
+  var filtered = allVacaciones.filter(function(v) {
+    var inMonth = v.desde <= (año+'-'+mesStr+'-31') && v.hasta >= (año+'-'+mesStr+'-01');
+    var matchF = !filter || v.fullName.toLowerCase().indexOf(filter) !== -1 || v.doc.toLowerCase().indexOf(filter) !== -1;
+    return inMonth && matchF;
+  });
+
+  document.getElementById('vac-count').textContent = filtered.length + ' médico' + (filtered.length!==1?'s':'');
+  var el = document.getElementById('vac-list');
+  if(!filtered.length) { el.innerHTML='<p class="vac-empty">No hay ausencias para este mes.</p>'; return; }
+  el.innerHTML = '<div class="vac-grid">' + filtered.map(function(v) {
+    return '<div class="vac-card"><div class="doc-name">'+v.fullName+'</div><div class="vac-range">'+formatDate(v.desde)+' → '+formatDate(v.hasta)+'</div></div>';
+  }).join('') + '</div>';
+}
+
+// Cargar al inicio
+var now = new Date();
+document.getElementById('mes').value = now.getMonth() + 1;
+cargarVacaciones();
+
+// ── LÓGICA DE TURNOS ──
+var PLANTILLA = {
+  1:{L:'Cruz',M:'Cruz',X:'Cruz',J:'Cruz',V:'Garcia',N:'Garcia'},
+  2:{L:'Vargas',M:'Vargas',X:'Vargas',J:'Vargas',V:'Vargas',N:'Vargas'},
+  3:{L:'Perez',M:'Tobos',X:'Tobos',J:'Tobos',V:'Tobos',N:'Tobos'},
+  4:{L:'Chamorro',M:'Lopierre',X:'Lopierre',J:'Chamorro',V:'Chamorro',N:'Chamorro'},
+  5:{L:'Taborda',M:'Taborda',X:'Taborda',J:'Taborda',V:'Sanchez',N:'Sanchez'},
+  6:{L:'Arias',M:'Arias',X:'Arias',J:'Arias',V:'Aguirre',N:'Arias'},
+  7:{L:'Garcia',M:'Pay',X:'Pay',J:'Pay',V:'Pay',N:'Pay'},
+  8:{L:'Tellez',M:'Tellez',X:'Diaz',J:'Tellez',V:'Diaz',N:'Diaz'},
+  9:{L:'JB Silva',M:'JB Silva',X:'Garcia',J:'JB Silva',V:'JB Silva',N:'Aguirre'},
+  10:{L:'LE Silva',M:'LE Silva',X:'LE Silva',J:'LE Silva',V:'Higuera',N:'LE Silva'},
+  11:{L:'Turriago',M:'Turriago',X:'Turriago',J:'Turriago',V:'Turriago',N:'Turriago'},
+  12:{L:'Sanchez',M:'Alvarez',X:'Alvarez',J:'Gutierrez',V:'Gutierrez',N:'Gutierrez'},
+  13:{L:'Cantillo',M:'Cantillo',X:'Cantillo',J:'Cantillo',V:'Lopierre',N:'Cantillo'},
+  14:{L:'Mojica',M:'Mojica',X:'Tellez',J:'Mojica',V:'Mojica',N:''},
+  15:{L:'',M:'Perez',X:'',J:'Perez',V:'',N:'Cendales'},
+  16:{L:'Castaneda',M:'Aguirre',X:'Castaneda',J:'Castaneda',V:'Castaneda',N:'Castaneda'}
+};
+var NO_TURNO=['Cruz','Tellez','JB Silva','Perez','Taborda','Lopierre','Alvarez','Mojica'];
+var SEQ_DUENO={1:'Cruz',2:'Vargas',3:'Perez',4:'Chamorro',5:'Taborda',6:'Arias',7:'Garcia',8:'Tellez',9:'JB Silva',10:'LE Silva',11:'Turriago',12:'Alvarez',13:'Cantillo',14:'Mojica',15:'Perez',16:'Castaneda'};
+var PAGAN_TURNO=['Higuera','Aguirre','Cantillo'];
+var DISP_DIA={L:['Tobos','Pay','Diaz','Lopierre','Gutierrez','Higuera'],M:['Castaneda','Garcia','Chamorro','Diaz','Sanchez'],X:['Chamorro','Garcia','JB Silva','Sanchez','Aguirre'],J:['Garcia','Diaz','Sanchez','Aguirre'],V:['Taborda','LE Silva','Tellez','Cruz','Cantillo','Perez','Turriago']};
+var ROTATE_SEQ=[1,2,3,4,5,6,7,8,9,10,11,12,13,15,16];
+var SEQ_SLOT_DIA33={12:0,13:1,15:2,16:3,1:4,2:5,3:6,4:7,5:8,6:9,7:10,8:11,9:12,10:13,11:14};
+var SEQ_TO_SLOT_BASE={};
+Object.keys(SEQ_SLOT_DIA33).forEach(function(s){SEQ_TO_SLOT_BASE[s]=((SEQ_SLOT_DIA33[s]-33)%15+15)%15;});
+var ANCHOR=new Date(2026,3,1),H_ANC=new Date(2026,3,18),R_ANC=new Date(2026,3,19);
+var FESTIVOS=['2026-01-01','2026-01-12','2026-03-23','2026-04-02','2026-04-03','2026-05-01','2026-05-18','2026-06-08','2026-06-15','2026-06-29','2026-07-20','2026-08-07','2026-08-17','2026-10-12','2026-11-02','2026-11-16','2026-12-08','2026-12-25'];
+var MESES=['','Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+var DAY_NAMES=['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
+var DAY_COL={1:'L',2:'M',3:'X',4:'J',5:'V',6:null,0:null};
+
+function db2(d1,d2){return Math.round((d2-d1)/86400000);}
+function getWT(d){return Math.floor(db2(new Date(2026,0,5),d)/7)%2===0?'A':'B';}
+function getPos(seq,d){if(seq===14)return 14;var sb=SEQ_TO_SLOT_BASE[seq];if(sb===undefined)return null;return ROTATE_SEQ[((sb+db2(ANCHOR,d))%15+15)%15];}
+function getName(seq,col,w){if(!PLANTILLA[seq])return '';if(col==='X'&&seq===9)return w==='A'?'Garcia':'Chamorro';if(col==='V'&&seq===11)return w==='A'?'Turriago':'Perez';return PLANTILLA[seq][col]||'';}
+function vendria(doc,col,w){return ROTATE_SEQ.some(function(s){return getName(s,col,w)===doc;});}
+function ain(arr,item){if(item&&arr.indexOf(item)===-1)arr.push(item);}
+function isVac(doc,ds){return allVacaciones.some(function(v){return v.doc===doc&&ds>=v.desde&&ds<=v.hasta;});}
+function isFest(d){return FESTIVOS.indexOf(d.toISOString().slice(0,10))!==-1;}
+
+function buildDay(d) {
+  var dow=d.getDay(),fds=dow===0||dow===6,fest=isFest(d),spec=fds||fest;
+  var w=getWT(d),col=DAY_COL[dow],ds=d.toISOString().slice(0,10);
+  var s9=null,s10=null;
+  ROTATE_SEQ.forEach(function(s){var p=getPos(s,d);if(p===9)s9=s;if(p===10)s10=s;});
+  var tb=s9?getName(s9,'N',w):'';
+  var ht=db2(H_ANC,d)%17===0,rt=db2(R_ANC,d)%17===0;
+  var tf=tb,desp=null;
+  if(ht){desp=tb;tf='Higuera';}else if(rt){desp=tb;tf='Ruiz';}
+  var ay=new Date(d);ay.setDate(ay.getDate()-1);
+  var ha=db2(H_ANC,ay)%17===0,ra=db2(R_ANC,ay)%17===0;
+  var pr=ha?'Higuera':(ra?'Ruiz':null),ps=s10?getName(s10,'N',w):'',pd=pr||ps;
+  var pm={};for(var i=1;i<=16;i++)pm[i]='';
+  if(spec){pm[9]=tf;pm[10]=pd;return{pm:pm,tf:tf,r:[],sq:[],pg:[],nr:[]};}
+  ROTATE_SEQ.forEach(function(s){var p=getPos(s,d),nd=getName(s,col,w);if(p===9)pm[9]=tf;else if(p===10)pm[10]=pd;else{if(nd===tf||nd===pd)pm[p]='';else pm[p]=nd;}});
+  pm[14]=PLANTILLA[14][col]||'';
+  for(var p=1;p<=16;p++){if(pm[p]&&isVac(pm[p],ds))pm[p]='';}
+  var occ={};Object.keys(pm).forEach(function(k){if(pm[k])occ[pm[k]]=true;});occ[tf]=true;
+  var r=[];
+  if(desp&&vendria(desp,col,w)&&!occ[desp]&&!isVac(desp,ds))ain(r,desp);
+  if(pr&&ps&&ps!==pr){
+    if(vendria(ps,col,w)&&!occ[ps]&&!isVac(ps,ds))ain(r,ps);
+    for(var si=0;si<ROTATE_SEQ.length;si++){var sq2=ROTATE_SEQ[si];if(getName(sq2,'N',w)===ps){var nd2=getName(sq2,col,w);if(nd2&&nd2!==ps&&!occ[nd2]&&!isVac(nd2,ds))ain(r,nd2);break;}}
+  }
+  var u1={};Object.keys(occ).forEach(function(k){u1[k]=true;});r.forEach(function(k){u1[k]=true;});
+  var sq=[];
+  var d9=SEQ_DUENO[s9]||'',n9=s9?getName(s9,col,w):'';
+  if(d9&&NO_TURNO.indexOf(d9)!==-1&&!u1[d9]&&n9===d9&&!isVac(d9,ds))ain(sq,d9);
+  if(n9&&n9!==d9&&!u1[n9]&&!isVac(n9,ds))ain(sq,n9);
+  var d10=SEQ_DUENO[s10]||'',n10=s10?getName(s10,col,w):'';
+  if(d10&&NO_TURNO.indexOf(d10)!==-1&&!u1[d10]&&n10===d10&&!isVac(d10,ds))ain(sq,d10);
+  if(n10&&n10!==d10&&!u1[n10]&&!isVac(n10,ds))ain(sq,n10);
+  var u2={};Object.keys(u1).forEach(function(k){u2[k]=true;});sq.forEach(function(k){u2[k]=true;});
+  var pg=[];
+  PAGAN_TURNO.forEach(function(doc){if((doc===tf||doc===pd)&&!u2[doc]&&vendria(doc,col,w)&&!isVac(doc,ds))ain(pg,doc);});
+  var u3={};Object.keys(u2).forEach(function(k){u3[k]=true;});pg.forEach(function(k){u3[k]=true;});
+  var dl=(DISP_DIA[col]||[]).slice();
+  if(col==='X')dl=dl.filter(function(x){return x!==(w==='A'?'Garcia':'Chamorro');});
+  if(col==='V')dl=dl.filter(function(x){return x!==(w==='A'?'Turriago':'Perez');});
+  var nr=dl.filter(function(doc){return !u3[doc]&&!isVac(doc,ds);});
+  return{pm:pm,tf:tf,r:r,sq:sq,pg:pg,nr:nr};
+}
+
+function generarExcel() {
+  var mes=parseInt(document.getElementById('mes').value);
+  var año=parseInt(document.getElementById('año').value);
+  var status=document.getElementById('status');
+  var btn=document.getElementById('btn-gen');
+  btn.disabled=true;status.className='status loading';status.textContent='Generando Excel…';
+  setTimeout(function(){
+    try{
+      var WB=XLSX.utils.book_new(),wsData=[];
+      wsData.push([MESES[mes].toUpperCase()+' '+año,'','1','2','3','4','5','6','7','8','9 TURNO','10 POSTURNO','11','12','13','14 FIJA','15','16','','Disp. Turno Robado','Disp. Secuencia','Disp. Paga Turno','Disponibles']);
+      var dim=new Date(año,mes,0).getDate();
+      for(var day=1;day<=dim;day++){
+        var d=new Date(año,mes-1,day),dow=d.getDay();
+        var dn=DAY_NAMES[dow===0?6:dow-1];
+        var res=buildDay(d),pm=res.pm;
+        wsData.push([day,dn,pm[1]||'',pm[2]||'',pm[3]||'',pm[4]||'',pm[5]||'',pm[6]||'',pm[7]||'',pm[8]||'',pm[9]||'',pm[10]||'',pm[11]||'',pm[12]||'',pm[13]||'',pm[14]||'',pm[15]||'',pm[16]||'','',res.r.join(', '),res.sq.join(', '),res.pg.join(', '),res.nr.join(', ')]);
+      }
+      var ws=XLSX.utils.aoa_to_sheet(wsData);
+      ws['!cols']=[{wch:6},{wch:11},{wch:10},{wch:10},{wch:10},{wch:10},{wch:10},{wch:10},{wch:10},{wch:10},{wch:13},{wch:13},{wch:10},{wch:10},{wch:10},{wch:10},{wch:10},{wch:10},{wch:2},{wch:18},{wch:18},{wch:18},{wch:38}];
+      XLSX.utils.book_append_sheet(WB,ws,MESES[mes]+' '+año);
+      XLSX.writeFile(WB,'Turnos_'+MESES[mes]+'_'+año+'.xlsx');
+      status.className='status success';status.textContent='✓ Generado: Turnos_'+MESES[mes]+'_'+año+'.xlsx';
+    }catch(e){status.className='status error';status.textContent='Error: '+e.message;}
+    btn.disabled=false;
+  },150);
+}
+</script>
+
+</body>
+</html>
