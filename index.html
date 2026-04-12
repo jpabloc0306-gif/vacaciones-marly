@@ -130,48 +130,20 @@ header { background: var(–surface); border-bottom: 1px solid var(–border); p
 .day-tooltip { display: none; position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%); background: var(–ink); color: white; font-size: 0.6rem; padding: 0.3rem 0.5rem; border-radius: 5px; white-space: nowrap; z-index: 200; pointer-events: none; }
 .day:hover .day-tooltip { display: block; }
 
-#day-panel {
-position: fixed; bottom: 0; left: 0; right: 0; z-index: 400;
-padding: 0 0 env(safe-area-inset-bottom, 0);
-animation: slideUp 0.2s ease;
-}
+#day-panel { position: fixed; bottom: 0; left: 0; right: 0; z-index: 400; padding: 0 0 env(safe-area-inset-bottom, 0); animation: slideUp 0.2s ease; }
 @keyframes slideUp { from { transform: translateY(100%); opacity:0; } to { transform: translateY(0); opacity:1; } }
-#day-panel-inner {
-background: #ffffff;
-border-top: 2px solid var(–border);
-border-radius: 16px 16px 0 0;
-padding: 1.2rem 1.4rem 1.6rem;
-box-shadow: 0 -4px 24px rgba(0,0,0,0.12);
-max-height: 60vh;
-overflow-y: auto;
-}
-#day-panel-header {
-display: flex; justify-content: space-between; align-items: flex-start;
-margin-bottom: 1rem; padding-bottom: 0.8rem;
-border-bottom: 1px solid var(–border);
-}
-.panel-status-badge {
-display: inline-block; margin-top: 0.3rem;
-font-size: 0.7rem; font-weight: 600; padding: 0.2rem 0.6rem;
-border-radius: 20px;
-}
+#day-panel-inner { background: #ffffff; border-top: 2px solid var(–border); border-radius: 16px 16px 0 0; padding: 1.2rem 1.4rem 1.6rem; box-shadow: 0 -4px 24px rgba(0,0,0,0.12); max-height: 60vh; overflow-y: auto; }
+#day-panel-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem; padding-bottom: 0.8rem; border-bottom: 1px solid var(–border); }
+.panel-status-badge { display: inline-block; margin-top: 0.3rem; font-size: 0.7rem; font-weight: 600; padding: 0.2rem 0.6rem; border-radius: 20px; }
 .panel-status-badge.ok { background: #1a5c3a; color: white; }
 .panel-status-badge.warn { background: #c26b00; color: white; }
 .panel-status-badge.full { background: #b83232; color: white; }
 .panel-status-badge.empty { background: #e8f3ed; color: #1a5c3a; }
 #panel-names { display: flex; flex-direction: column; gap: 0.5rem; }
-.panel-name-row {
-display: flex; align-items: center; gap: 0.8rem;
-padding: 0.6rem 0.8rem;
-background: var(–card); border: 1px solid var(–border);
-border-radius: 8px; font-size: 0.82rem; font-weight: 500;
-}
+.panel-name-row { display: flex; align-items: center; gap: 0.8rem; padding: 0.6rem 0.8rem; background: var(–card); border: 1px solid var(–border); border-radius: 8px; font-size: 0.82rem; font-weight: 500; }
 .panel-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
 .panel-empty { font-size: 0.78rem; color: var(–ink3); text-align: center; padding: 1rem 0; }
-#panel-overlay {
-display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.3);
-z-index: 399; backdrop-filter: blur(2px);
-}
+#panel-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.3); z-index: 399; backdrop-filter: blur(2px); }
 
 .av0{background:#1a5c3a}.av1{background:#c26b00}.av2{background:#1a6b6b}.av3{background:#6b1a5c}
 .av4{background:#3a1a6b}.av5{background:#6b3a1a}.av6{background:#1a3a6b}.av7{background:#6b1a2a}
@@ -199,6 +171,19 @@ z-index: 399; backdrop-filter: blur(2px);
     <button class="btn-primary" onclick="tryLogin()">Ingresar</button>
     <div class="login-error" id="login-error"></div>
     <button class="btn-cancel" onclick="closeLogin()">Cancelar</button>
+  </div>
+</div>
+
+<div id="changepw-screen" style="display:none;position:fixed;inset:0;background:rgba(26,25,22,0.7);backdrop-filter:blur(6px);z-index:1000;align-items:center;justify-content:center;">
+  <div class="login-box">
+    <h2>Cambiar contraseña</h2>
+    <p>Ingresa la contraseña actual y la nueva</p>
+    <input type="password" id="pw-current" placeholder="Contraseña actual">
+    <input type="password" id="pw-new" placeholder="Nueva contraseña">
+    <input type="password" id="pw-new2" placeholder="Repetir nueva contraseña">
+    <button class="btn-primary" onclick="saveNewPw()">Guardar contraseña</button>
+    <div class="login-error" id="changepw-error"></div>
+    <button class="btn-cancel" onclick="closeChangePw()">Cancelar</button>
   </div>
 </div>
 
@@ -244,8 +229,7 @@ z-index: 399; backdrop-filter: blur(2px);
     <div class="sidebar-section">
       <h3>Equipo</h3>
       <div style="margin-bottom:0.7rem;">
-        <select id="sidebar-year-sel" onchange="changeSidebarYear()" style="width:100%;padding:0.35rem 0.6rem;border:1.5px solid var(--border);border-radius:6px;font-family:'Instrument Sans',sans-serif;font-size:0.75rem;background:var(--card);color:var(--ink);cursor:pointer;">
-        </select>
+        <select id="sidebar-year-sel" onchange="changeSidebarYear()" style="width:100%;padding:0.35rem 0.6rem;border:1.5px solid var(--border);border-radius:6px;font-family:'Instrument Sans',sans-serif;font-size:0.75rem;background:var(--card);color:var(--ink);cursor:pointer;"></select>
       </div>
       <div id="doctors-list"></div>
     </div>
@@ -261,7 +245,10 @@ z-index: 399; backdrop-filter: blur(2px);
 
 ```
 <div id="admin-panel">
-  <h3>⊕ Asignar vacaciones</h3>
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.8rem;">
+    <h3 style="margin-bottom:0;">⊕ Asignar vacaciones</h3>
+    <button class="btn-sm" style="background:none;border:1.5px solid var(--border);color:var(--ink2);font-size:0.7rem;" onclick="openChangePw()">🔑 Cambiar clave</button>
+  </div>
   <div class="admin-form">
     <div class="form-group">
       <label>Médico</label>
@@ -315,11 +302,37 @@ const firebaseConfig = {
   appId: "1:325344714783:web:d1316dc10b5357f9ffb52a"
 };
 
+// ── GITHUB CONFIG ──
+const GITHUB_TOKEN = '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';
+const GITHUB_REPO = 'jpabloc0306-gif/vacaciones-marly';
+const GITHUB_FILE = 'vacaciones.json';
+
+async function updateGithubJson(vacDataObj) {
+  try {
+    const content = btoa(unescape(encodeURIComponent(JSON.stringify(vacDataObj, null, 2))));
+    const url = `https://api.github.com/repos/${GITHUB_REPO}/contents/${GITHUB_FILE}`;
+    const headers = { Authorization: `token ${GITHUB_TOKEN}`, 'Content-Type': 'application/json' };
+    
+    // Obtener SHA si el archivo ya existe
+    let sha;
+    const getRes = await fetch(url, { headers });
+    if(getRes.ok) { const ex = await getRes.json(); sha = ex.sha; }
+    
+    const body = { message: 'Actualizar vacaciones.json', content };
+    if(sha) body.sha = sha;
+    
+    await fetch(url, { method: 'PUT', headers, body: JSON.stringify(body) });
+    console.log('✓ vacaciones.json actualizado en GitHub');
+  } catch(e) {
+    console.warn('No se pudo actualizar GitHub JSON:', e);
+  }
+}
+
 const fbApp = initializeApp(firebaseConfig);
 const db = getFirestore(fbApp);
 const DOC_REF = doc(db, "vacaciones", "datos");
 
-const ADMIN_PASSWORD = 'marly2025';
+let ADMIN_PASSWORD = 'marly2025';
 const MAX_SOFT = 1, MAX_HARD = 2, MAX_ALERT = 3, MAX_DAYS = 21;
 const NAMES = [
   'Leonardo Cendales','Andrés Ruiz','Enrique Lopierre','Mauricio Pérez',
@@ -335,7 +348,6 @@ const COLOR_MAP = ['#1a5c3a','#c26b00','#1a6b6b','#6b1a5c','#3a1a6b','#6b3a1a','
 
 let isAdmin=false, selectedDoc=null, currentYear=new Date().getFullYear(), sidebarYear=new Date().getFullYear(), viewMode='all', vacData={};
 
-// ── SYNC ──
 function setSyncBadge(s){
   const el=document.getElementById('sync-badge');
   const states={ok:['● En línea','#2d7a4a','#e8f3ed','#b5d9c3'],saving:['● Guardando…','#c26b00','#fff3e0','#f0c98a'],error:['● Sin conexión','#b83232','#fdeaea','#f0b0b0'],connecting:['● Conectando…','#1a3a8f','#e8f0ff','#aac0f0']};
@@ -345,8 +357,13 @@ function setSyncBadge(s){
 
 async function saveToFirebase(){
   setSyncBadge('saving');
-  try{ await setDoc(DOC_REF,{vacaciones:JSON.stringify(vacData),updatedAt:new Date().toISOString()}); setSyncBadge('ok'); }
-  catch(e){ console.error(e); setSyncBadge('error'); showAssignStatus('err','Error al guardar. Verifica tu conexión.'); }
+  try{
+    await setDoc(DOC_REF,{vacaciones:JSON.stringify(vacData),adminPassword:ADMIN_PASSWORD,updatedAt:new Date().toISOString()});
+    setSyncBadge('ok');
+    // ── NUEVO: Actualizar GitHub JSON ──
+    await updateGithubJson(vacData);
+  }
+  catch(e){ console.error(e); setSyncBadge('error'); showAssignStatus('err','Error al guardar.'); }
 }
 
 function startRealtimeListener(){
@@ -359,52 +376,35 @@ function startRealtimeListener(){
 async function init(){
   try{
     const snap=await getDoc(DOC_REF);
-    vacData = snap.exists() ? JSON.parse(snap.data().vacaciones||'{}') : {};
+    if(snap.exists()){
+      vacData = JSON.parse(snap.data().vacaciones||'{}');
+      if(snap.data().adminPassword) ADMIN_PASSWORD = snap.data().adminPassword;
+    }
     document.getElementById('loading-screen').style.display='none';
     setSyncBadge('ok'); startRealtimeListener(); renderAll();
   }catch(e){
     console.error(e);
-    document.getElementById('loading-screen').innerHTML='<div style="text-align:center;padding:2rem;"><p style="color:#b83232;font-size:0.9rem;margin-bottom:0.5rem;">⚠ No se pudo conectar con Firebase</p><p style="color:#9a9590;font-size:0.75rem;">Verifica las reglas de Firestore y recarga la página.</p></div>';
+    document.getElementById('loading-screen').innerHTML='<div style="text-align:center;padding:2rem;"><p style="color:#b83232;">⚠ No se pudo conectar con Firebase</p></div>';
   }
 }
 
-// ── UTIL ──
 function parseDate(s){const[y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d);}
 function isWeekend(s){const d=parseDate(s);return d.getDay()===0||d.getDay()===6;}
 function totalDays(s,e){return Math.round((parseDate(e)-parseDate(s))/86400000)+1;}
 function allDates(s,e){
   const dates=[],c=new Date(parseDate(s)),end=parseDate(e);
-  while(c<=end){
-    const y=c.getFullYear(),mo=String(c.getMonth()+1).padStart(2,'0'),d=String(c.getDate()).padStart(2,'0');
-    dates.push(`${y}-${mo}-${d}`);
-    c.setDate(c.getDate()+1);
-  }
+  while(c<=end){const y=c.getFullYear(),mo=String(c.getMonth()+1).padStart(2,'0'),d=String(c.getDate()).padStart(2,'0');dates.push(`${y}-${mo}-${d}`);c.setDate(c.getDate()+1);}
   return dates;
 }
 function getVacs(id){return vacData[String(id)]||[];}
-function usedDays(id, year){
-  const y=year||currentYear;
-  return getVacs(id)
-    .filter(v=>v.start.startsWith(String(y)))
-    .reduce((a,v)=>a+totalDays(v.start,v.end),0);
-}
+function usedDays(id,year){const y=year||currentYear;return getVacs(id).filter(v=>v.start.startsWith(String(y))).reduce((a,v)=>a+totalDays(v.start,v.end),0);}
 function avatarInitials(n){const p=n.split(' ');return p[0][0]+(p[1]?p[1][0]:'');}
 function buildOccMap(){
   const m={};
-  NAMES.forEach((_,id)=>{
-    const vacs=vacData[String(id)]||[];
-    vacs.forEach(v=>{
-      if(!v.start||!v.end) return;
-      allDates(v.start,v.end).forEach(d=>{
-        if(!m[d])m[d]=[];
-        if(!m[d].includes(id))m[d].push(id);
-      });
-    });
-  });
+  NAMES.forEach((_,id)=>{getVacs(id).forEach(v=>{if(!v.start||!v.end)return;allDates(v.start,v.end).forEach(d=>{if(!m[d])m[d]=[];if(!m[d].includes(id))m[d].push(id);});});});
   return m;
 }
 
-// ── LOGIN ──
 window.handleRoleBtn=()=>isAdmin?logOut():openLogin();
 window.openLogin=()=>{document.getElementById('login-screen').classList.add('visible');document.getElementById('pw-input').focus();};
 window.closeLogin=()=>{document.getElementById('login-screen').classList.remove('visible');document.getElementById('pw-input').value='';document.getElementById('login-error').textContent='';};
@@ -419,7 +419,6 @@ function applyRole(){
   else{btn.textContent='🔒 Admin';btn.classList.remove('active');badge.textContent='Vista pública';badge.className='badge';panel.classList.remove('visible');document.getElementById('doctor-detail').classList.remove('visible');}
 }
 
-// ── DOCTORS ──
 function renderDoctors(){
   const el=document.getElementById('doctors-list');el.innerHTML='';
   NAMES.forEach((name,id)=>{
@@ -437,7 +436,6 @@ function selectDoc(id){
   renderDoctors();renderDocDetail();renderCalendar();
 }
 
-// ── DOCTOR DETAIL ──
 function renderDocDetail(){
   const panel=document.getElementById('doctor-detail');
   if(selectedDoc===null){panel.classList.remove('visible');return;}
@@ -468,7 +466,6 @@ window.deleteVac=async(docId,idx)=>{
   await saveToFirebase();
 };
 
-// ── ADMIN ASSIGN ──
 function populateDocSelect(){
   const sel=document.getElementById('sel-doctor');sel.innerHTML='<option value="">— Seleccionar médico —</option>';
   NAMES.forEach((name,id)=>{const o=document.createElement('option');o.value=id;o.textContent=name;sel.appendChild(o);});
@@ -484,7 +481,7 @@ window.assignVacation=async()=>{
   const docId=+sv,start=document.getElementById('sel-start').value,end=document.getElementById('sel-end').value;
   if(!start||!end)return showAssignStatus('err','Ingresa las fechas.');
   if(start>end)return showAssignStatus('err','La fecha de inicio es posterior al fin.');
-  const days=totalDays(start,end),used=usedDays(docId);
+  const days=totalDays(start,end);
   const assignYear=start.slice(0,4);
   const usedInYear=getVacs(docId).filter(v=>v.start.startsWith(assignYear)).reduce((a,v)=>a+totalDays(v.start,v.end),0);
   if(usedInYear+days>MAX_DAYS)return showAssignStatus('err',`Excede el límite ${assignYear}. Disponibles: ${MAX_DAYS-usedInYear} días.`);
@@ -497,34 +494,23 @@ window.assignVacation=async()=>{
     else if(cnt>=MAX_HARD) alertDays.push(d);
     else if(cnt>=MAX_SOFT) warnDays.push(d);
   });
-
-  // Hard block: already 3 doctors on those days
-  if(hardBlocked.length>0)return showAssignStatus('err',`⛔ Bloqueado: ${hardBlocked.slice(0,2).join(', ')}${hardBlocked.length>2?'…':''} ya tienen 3 médicos de vacaciones.`);
-
-  // Alert: would put 3rd doctor on some days — admin must confirm
+  if(hardBlocked.length>0)return showAssignStatus('err',`⛔ Bloqueado: ${hardBlocked.slice(0,2).join(', ')} ya tienen 3 médicos.`);
   if(alertDays.length>0){
     const datesStr=alertDays.slice(0,3).join(', ')+(alertDays.length>3?` y ${alertDays.length-3} más`:'');
-    const confirmMsg=`⚠ ALERTA: Estas fechas ya tienen 2 anestesiólogos de vacaciones:\n${datesStr}\n\nAl asignar estas vacaciones quedarían 3 simultáneos en esos días.\n\n¿Deseas autorizar de todas formas?`;
-    if(!confirm(confirmMsg)){
-      showAssignStatus('warn','Vacaciones no asignadas. Autorización denegada.');
-      return;
-    }
+    if(!confirm(`⚠ ALERTA: ${datesStr} ya tienen 2 anestesiólogos.\n¿Autorizar de todas formas?`)){showAssignStatus('warn','No asignado.');return;}
   }
-
   const key=String(docId);
   if(!vacData[key])vacData[key]=[];
   vacData[key].push({start,end});
   vacData[key].sort((a,b)=>a.start.localeCompare(b.start));
   selectedDoc=docId;
   await saveToFirebase();
-
-  if(alertDays.length>0) showAssignStatus('warn',`⚠ Asignado con excepción: ${alertDays.length} día(s) tienen 3 anestesiólogos.`);
-  else if(warnDays.length>0) showAssignStatus('warn',`✓ Asignado. Atención: ${warnDays.length} día(s) llegan al máximo de 2.`);
+  if(alertDays.length>0)showAssignStatus('warn',`⚠ Asignado con excepción.`);
+  else if(warnDays.length>0)showAssignStatus('warn',`✓ Asignado. ${warnDays.length} día(s) al máximo.`);
   else showAssignStatus('ok',`✓ Vacaciones asignadas: ${days} días a ${NAMES[docId]}.`);
 };
 function showAssignStatus(t,m){const el=document.getElementById('assign-status');el.className='assign-status '+t;el.textContent=m;setTimeout(()=>el.textContent='',6000);}
 
-// ── CALENDAR ──
 function renderCalendar(){
   const occ=buildOccMap(),grid=document.getElementById('months-grid');grid.innerHTML='';
   const months=viewMode==='all'?Array.from({length:12},(_,i)=>i):[viewMode];
@@ -542,73 +528,47 @@ function buildMonth(year,month,occ){
     const ds=`${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
     const docIds=occ[ds]||[],cnt=docIds.length,weekend=isWeekend(ds),isMine=selectedDoc!==null&&docIds.includes(selectedDoc);
     let state='s-free';
-    if(cnt>=MAX_HARD) state='s-full';
-    else if(cnt>=MAX_SOFT) state='s-warn';
-    else if(cnt>0) state='s-occ';
-    if(isMine) state='s-mine';
+    if(cnt>=MAX_HARD)state='s-full';else if(cnt>=MAX_SOFT)state='s-warn';else if(cnt>0)state='s-occ';
+    if(isMine)state='s-mine';
     const cell=document.createElement('div');
-    // Remove 'weekend' dimming class when doctor has vacations on that day
-    const wkClass = (weekend && cnt===0) ? ' weekend' : '';
+    const wkClass=(weekend&&cnt===0)?' weekend':'';
     cell.className=`day${wkClass} ${state}`;
-    if(weekend && cnt===0) cell.style.opacity='0.3';
+    if(weekend&&cnt===0)cell.style.opacity='0.3';
     const dots=docIds.slice(0,5).map(()=>'<div class="ddot"></div>').join('');
     cell.innerHTML=`<div class="day-n">${d}</div><div class="day-dots">${dots}</div>`;
     if(!weekend){
       cell.innerHTML+=`<div class="day-tooltip">${cnt} médico${cnt!==1?'s':''} ${cnt===0?'disponibles':'de vacaciones'}</div>`;
       cell.onclick=(e)=>showDayPopup(ds,docIds,e);
-    } else if(cnt>0){
+    }else if(cnt>0){
       cell.innerHTML+=`<div class="day-tooltip">${cnt} médico${cnt!==1?'s':''} de vacaciones</div>`;
-      cell.onclick=(e)=>showDayPopup(ds,docIds,e);
-      cell.style.cursor='pointer';
+      cell.onclick=(e)=>showDayPopup(ds,docIds,e);cell.style.cursor='pointer';
     }
     body.appendChild(cell);
   }
   return card;
 }
 
-// ── DAY PANEL ──
 function showDayPopup(ds,docIds,event){
   event.stopPropagation();
-
-  // Format date
-  const [y,mo,d]=ds.split('-');
+  const[y,mo,d]=ds.split('-');
   const dateObj=new Date(+y,+mo-1,+d);
   const dayName=dateObj.toLocaleDateString('es-CO',{weekday:'long',day:'numeric',month:'long'});
   document.getElementById('panel-date').textContent=dayName.charAt(0).toUpperCase()+dayName.slice(1);
-
-  // Status badge
   const cnt=docIds.length;
-  let badgeClass='empty', badgeText='✓ Nadie de vacaciones';
-  if(cnt>=MAX_ALERT){badgeClass='full';badgeText=`⛔ Excepción autorizada (${cnt} médicos)`;}
+  let badgeClass='empty',badgeText='✓ Nadie de vacaciones';
+  if(cnt>=MAX_ALERT){badgeClass='full';badgeText=`⛔ Excepción (${cnt} médicos)`;}
   else if(cnt>=MAX_HARD){badgeClass='full';badgeText=`⛔ Cupo completo (${cnt}/${MAX_HARD})`;}
   else if(cnt>=MAX_SOFT){badgeClass='warn';badgeText=`⚠ Casi lleno (${cnt}/${MAX_HARD})`;}
   else if(cnt>0){badgeClass='ok';badgeText=`✓ Disponible (${cnt}/${MAX_HARD})`;}
   document.getElementById('panel-status').innerHTML=`<span class="panel-status-badge ${badgeClass}">${badgeText}</span>`;
-
-  // Names list
   const namesEl=document.getElementById('panel-names');namesEl.innerHTML='';
-  if(!cnt){
-    namesEl.innerHTML='<div class="panel-empty">Ningún médico de vacaciones este día.</div>';
-  } else {
-    docIds.forEach(id=>{
-      const row=document.createElement('div');
-      row.className='panel-name-row';
-      row.innerHTML=`<div class="panel-dot" style="background:${COLOR_MAP[id%12]}"></div><span>${NAMES[id]}</span>`;
-      namesEl.appendChild(row);
-    });
-  }
-
-  // Show panel and overlay
+  if(!cnt){namesEl.innerHTML='<div class="panel-empty">Ningún médico de vacaciones.</div>';}
+  else{docIds.forEach(id=>{const row=document.createElement('div');row.className='panel-name-row';row.innerHTML=`<div class="panel-dot" style="background:${COLOR_MAP[id%12]}"></div><span>${NAMES[id]}</span>`;namesEl.appendChild(row);});}
   document.getElementById('day-panel').style.display='block';
   document.getElementById('panel-overlay').style.display='block';
 }
-window.closePopup=()=>{
-  document.getElementById('day-panel').style.display='none';
-  document.getElementById('panel-overlay').style.display='none';
-};
-// overlay handles close
+window.closePopup=()=>{document.getElementById('day-panel').style.display='none';document.getElementById('panel-overlay').style.display='none';};
 
-// ── NAVIGATION ──
 window.changeViewMode=m=>{viewMode=m;renderCalendar();};
 window.prevNav=()=>{if(viewMode==='all'){currentYear--;document.getElementById('year-sel').value=currentYear;document.getElementById('year-label').textContent=currentYear;}else{viewMode=(viewMode+11)%12;}renderCalendar();};
 window.nextNav=()=>{if(viewMode==='all'){currentYear++;document.getElementById('year-sel').value=currentYear;document.getElementById('year-label').textContent=currentYear;}else{viewMode=(viewMode+1)%12;}renderCalendar();};
@@ -617,8 +577,6 @@ window.changeYear=()=>{currentYear=+document.getElementById('year-sel').value;do
 const ys=document.getElementById('year-sel');
 const startYear=new Date().getFullYear()-1;
 for(let y=startYear;y<=startYear+11;y++){const o=document.createElement('option');o.value=y;o.textContent=y;if(y===currentYear)o.selected=true;ys.appendChild(o);}
-
-// Sidebar year selector
 const sys=document.getElementById('sidebar-year-sel');
 for(let y=startYear;y<=startYear+11;y++){const o=document.createElement('option');o.value=y;o.textContent=y;if(y===sidebarYear)o.selected=true;sys.appendChild(o);}
 window.changeSidebarYear=()=>{sidebarYear=+document.getElementById('sidebar-year-sel').value;renderDoctors();};
@@ -628,6 +586,17 @@ function renderAll(){
   renderDoctors();renderDocDetail();renderCalendar();
   if(isAdmin){populateDocSelect();if(selectedDoc!==null)document.getElementById('sel-doctor').value=selectedDoc;}
 }
+
+window.openChangePw=()=>{document.getElementById('changepw-screen').style.display='flex';['pw-current','pw-new','pw-new2'].forEach(id=>document.getElementById(id).value='');document.getElementById('changepw-error').textContent='';};
+window.closeChangePw=()=>{document.getElementById('changepw-screen').style.display='none';};
+window.saveNewPw=async()=>{
+  const cur=document.getElementById('pw-current').value,nw=document.getElementById('pw-new').value,nw2=document.getElementById('pw-new2').value,err=document.getElementById('changepw-error');
+  err.textContent='';
+  if(cur!==ADMIN_PASSWORD){err.textContent='Contraseña actual incorrecta.';return;}
+  if(nw.length<6){err.textContent='Mínimo 6 caracteres.';return;}
+  if(nw!==nw2){err.textContent='Las contraseñas no coinciden.';return;}
+  ADMIN_PASSWORD=nw;await saveToFirebase();window.closeChangePw();showAssignStatus('ok','✓ Contraseña actualizada.');
+};
 
 init();
 </script>
