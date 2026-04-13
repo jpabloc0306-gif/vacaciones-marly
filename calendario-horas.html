@@ -204,6 +204,8 @@ border:1.5px solid transparent;}
 
 /* ── TURNO DOBLE ── */
 .dc.turno-doble{position:relative;overflow:hidden;border-color:rgba(255,68,68,0.65)!important;background:transparent!important;display:flex;flex-direction:column;padding:0!important;}
+.dc.dc-split-base{background:transparent;}
+.dc.dc-split-base.turno-doble{border-color:rgba(255,68,68,0.65)!important;}
 .dc.turno-doble .dc-half{flex:1;display:flex;align-items:center;justify-content:center;padding:0.15rem 0.28rem;}
 .dc.turno-doble .dc-half.top{background:var(–dt-color,rgba(74,222,128,0.5));}
 .dc.turno-doble .dc-half.bot{background:rgba(255,68,68,0.35);}
@@ -873,6 +875,8 @@ function renderPanel(doc,who){
     }
 
     var hasDturno=!!(edit&&edit.dturnoPos&&(auto.pos===9||ePos===9));
+    // When turno doble, override colorCls - the split halves handle colors
+    if(hasDturno)colorCls='dc-split-base';
     var dturnoColor='rgba(74,222,128,0.5)'; // default verde
     if(edit&&edit.dturnoPos){
       var dp=edit.dturnoPos;
