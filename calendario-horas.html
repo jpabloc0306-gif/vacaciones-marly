@@ -536,16 +536,16 @@ border:1.5px solid transparent;}
 <script>
 // ── HORAS ─────────────────────────────────────────────────────────────────────
 var HORAS_SEMANA={1:12,2:6,3:12,4:9,5:12,6:12,7:12,8:10,9:12,10:0,11:8,12:9,13:6,14:5,15:4,16:2};
-var HORAS_SAB={1:12,2:10,3:8,4:8,5:6,6:6,7:12,8:3,11:5,12:4};
-var HORAS_DOMFEST={1:12,7:12};
+var HORAS_SAB={1:12,2:10,3:8,4:8,5:6,6:6,7:12,8:3,9:12,10:0,11:5,12:4};
+var HORAS_DOMFEST={1:12,7:12,9:12,10:0};
 
 var POS_SEMANA={0:'— Libre',1:'P1 — Disp. nocturna (12h)',2:'P2 (6h)',3:'P3 (12h)',4:'P4 — Consulta (9h)',5:'P5 (12h)',6:'P6 (12h)',7:'P7 — Maternidad (12h)',8:'P8 (10h)',9:'P9 — Turno noche (12h)',10:'P10 — Posturno (0h)',11:'P11 (8h)',12:'P12 — Consulta (9h)',13:'P13 (6h)',14:'P14 (5h)',15:'P15 (4h)',16:'P16 (2h)'};
-var POS_SAB={0:'— No trabajo',1:'P1 — Disp. todo el dia (12h)',2:'P2 (10h)',3:'P3 (8h)',4:'P4 (8h)',5:'P5 (6h)',6:'P6 (6h)',7:'P7 — Maternidad (12h)',8:'P8 — Consulta (3h)',11:'P11 (5h)',12:'P12 (4h)'};
-var POS_DOMFEST={0:'— No trabajo',1:'P1 — Disp. todo el dia (12h)',7:'P7 — Maternidad (12h)'};
+var POS_SAB={0:'— No trabajo',1:'P1 — Disp. todo el dia (12h)',2:'P2 (10h)',3:'P3 (8h)',4:'P4 (8h)',5:'P5 (6h)',6:'P6 (6h)',7:'P7 — Maternidad (12h)',8:'P8 — Consulta (3h)',9:'P9 — Turno noche (12h)',10:'P10 — Posturno (0h)',11:'P11 (5h)',12:'P12 (4h)'};
+var POS_DOMFEST={0:'— No trabajo',1:'P1 — Disp. todo el dia (12h)',7:'P7 — Maternidad (12h)',9:'P9 — Turno noche (12h)',10:'P10 — Posturno (0h)'};
 
 var KEYS_SEMANA=[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16];
-var KEYS_SAB=[0,1,2,3,4,5,6,7,8,11,12];
-var KEYS_DOMFEST=[0,1,7];
+var KEYS_SAB=[0,1,2,3,4,5,6,7,8,9,10,11,12];
+var KEYS_DOMFEST=[0,1,7,9,10];
 
 function horasByPos(pos,dayType){
   if(dayType==='sab')return HORAS_SAB[pos]||0;
@@ -954,7 +954,7 @@ function openModal(day,who){
 
   var hint='';
   if(_mDT==='sab')hint='<div class="mhint">Posiciones de sabado</div>';
-  if(_mDT==='domfest')hint='<div class="mhint">Solo P1 (disp. dia) o P7 (maternidad)</div>';
+  if(_mDT==='domfest')hint='<div class="mhint">Dom/Festivo: P1, P7, P9 o P10</div>';
 
   var opts='';
   posKeys.forEach(function(p){opts+='<option value="'+p+'"'+(curPos===p?' selected':'')+'>'+posLabels[p]+'</option>';});
