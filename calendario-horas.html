@@ -697,7 +697,16 @@ function saveEdit(who,day,data){var k=sk(who);if(!memStore[k])memStore[k]={};mem
 function removeEdit(who,day){var k=sk(who);if(!memStore[k])memStore[k]={};delete memStore[k][day];try{localStorage.setItem('marly-'+k,JSON.stringify(memStore[k]));}catch(e){}}
 function loadEdits(who){try{var v=localStorage.getItem('marly-'+sk(who));if(v)memStore[sk(who)]=JSON.parse(v);}catch(e){}}
 
-var ANEST_NAMES=['Cendales','Ruiz','Lopierre','Perez','Tobos','Aguirre','Diaz','JB Silva','Mojica','LE Silva','Vargas','Cantillo','Arias','Gutierrez','Chamorro','Tellez','Taborda','Cruz','Alvarez','Turriago','Higuera','Castaneda','Garcia','Pay'];
+var ANEST_NAMES=['Cendales','Ruiz','Lopierre','Perez','Tobos','Aguirre','Diaz','JB Silva','Mojica','LE Silva','Vargas','Cantillo','Arias','Gutierrez','Chamorro','Tellez','Taborda','Cruz','Alvarez','Turriago','Higuera','Castaneda','Garcia','Pay','Sanchez'];
+var INITIALS={
+  'Cendales':'LC','Ruiz':'AR','Diaz':'AD','Taborda':'AT','Vargas':'AV',
+  'Arias':'JMA','Pay':'JLP','Tellez':'JCT','Mojica':'CTM','Turriago':'RT',
+  'Sanchez':'ES','Aguirre':'LA','Cruz':'EC','Castaneda':'JPC','Garcia':'MCG',
+  'Gutierrez':'GG','Perez':'MP','JB Silva':'JBS','LE Silva':'LES',
+  'Lopierre':'EL','Tobos':'LT','Cantillo':'MJC','Chamorro':'CC','Higuera':'AH',
+  'Alvarez':'CA'
+};
+function initials(name){return INITIALS[name]||name;}
 var SALARIO_BASE=2058698;
 var PMA_CASO=525000;
 function pk(who){return 'p-'+who+'-'+curYear+'-'+String(curMonth).padStart(2,'0');}
@@ -847,8 +856,8 @@ function renderPanel(doc,who){
 
     var festPip=esFest?'<span class="fest-pip"></span>':'';
     var noteHtml='';
-    if(edit&&edit.tcuad)noteHtml+='<div class="dc-note note-tcuad">TC: '+edit.tcuad+'</div>';
-    if(edit&&(edit.favor||edit.favorSvc))noteHtml+='<div class="dc-note note-favor">Fav: '+(edit.favorSvc?'Servicio':edit.favor)+'</div>';
+    if(edit&&edit.tcuad)noteHtml+='<div class="dc-note note-tcuad">TC: '+initials(edit.tcuad)+'</div>';
+    if(edit&&(edit.favor||edit.favorSvc))noteHtml+='<div class="dc-note note-favor">Fav: '+(edit.favorSvc?'Srv':initials(edit.favor))+'</div>';
     var styleAttr=hasDturno?' style="--dt-color:'+dturnoColor+'"':'';
     cells+='<div class="'+cls+'"'+styleAttr+' onclick="openModal('+day+',\''+who+'\')">'
       +(hasDturno?
