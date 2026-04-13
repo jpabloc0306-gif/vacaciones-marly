@@ -805,9 +805,11 @@ function renderPanel(doc,who){
 
     // clase color
     var colorCls;
-    if(isEdited){
+    if(edit&&edit.tcuad){
+      // Turno cuadrado: celda apagada, solo borde naranja
+      colorCls='tipo-libre';
+    } else if(isEdited){
       if(ePos===0&&dayType!=='normal'){
-        // editado a libre en fds/fest/sab
         colorCls='fds-off';
       } else if(ePos===0){
         colorCls='tipo-libre';
