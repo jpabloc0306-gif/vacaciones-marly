@@ -569,11 +569,11 @@ function tipoClase(pos, tipo, dayType){
   if(pos===10)        return 'tipo-posturno';
   if(pos===1)         return 'tipo-p1';
   if(pos===7)         return 'tipo-mat';
-  if(pos===4||pos===12) return 'tipo-consulta';
+  if((pos===4||pos===12)&&dayType!=='sab') return 'tipo-consulta';
   if(pos===8&&dayType==='sab') return 'tipo-consulta';
   return 'tipo-normal';
 }
-function tipoTag(pos, tipo){
+function tipoTag(pos, tipo, dayType){
   if(tipo==='vac')    return 'Vac.';
   if(tipo==='disp')   return 'Disp.';
   if(tipo==='sab-van')return '';        // verde sin texto hasta que editen
@@ -582,8 +582,8 @@ function tipoTag(pos, tipo){
   if(pos===9)  return 'Turno';
   if(pos===10) return 'Posturno';
   if(pos===7)  return 'Maternidad';
-  if(pos===4||pos===12) return 'Consulta';
-  if(pos===8) return 'P8';
+  if((pos===4||pos===12)&&dayType!=='sab') return 'Consulta';
+  if(pos===8&&dayType==='sab') return 'Consulta';
   if(pos===1)  return 'P1';
   return 'P'+pos;
 }
@@ -895,9 +895,9 @@ function renderPanel(doc,who){
 
     var tag;
     if(isEdited){
-      tag=(ePos===0)?'Libre':tipoTag(ePos,'plantilla');
+      tag=(ePos===0)?'Libre':tipoTag(ePos,'plantilla',dayType);
     } else {
-      tag=tipoTag(auto.pos,auto.tipo);
+      tag=tipoTag(auto.pos,auto.tipo,dayType);
     }
 
     var festPip=esFest?'<span class="fest-pip"></span>':'';
@@ -909,7 +909,7 @@ function renderPanel(doc,who){
       +(hasDturno?
         '<div class="dc-num"><span>'+day+'</span>'+festPip+'</div>'
         +'<div class="dc-split-top" style="background:'+dturnoColor+'">'
-        +'<span class="dc-tag-top" style="color:white;text-shadow:0 1px 2px rgba(0,0,0,0.5)">'+tipoTag(edit.dturnoPos,'plantilla')+'</span></div>'
+        +'<span class="dc-tag-top" style="color:white;text-shadow:0 1px 2px rgba(0,0,0,0.5)">'+tipoTag(edit.dturnoPos,'plantilla','normal')+'</span></div>'
         +'<div class="dc-split-bot"><span class="dc-tag-bot">Turno</span></div>'
         :'<div class="dc-num"><span>'+day+'</span>'+festPip+'</div>'
         +'<div class="dc-body">'+(tag?'<div class="dc-tag">'+tag+'</div>':'')+noteHtml+'</div>')
