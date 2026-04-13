@@ -710,10 +710,17 @@ function removeEdit(who,day){
   fsSync();
 };
 function initials(name){return INITIALS[name]||name;}
+var now=new Date();
+var curYear=now.getFullYear();
+var curMonth=now.getMonth()+1;
+if(curYear<2026){curYear=2026;curMonth=1;}
 var SALARIO_BASE=2058698;
 var PMA_CASO=525000;
 function pk(who){return 'p-'+who+'-'+curYear+'-'+String(curMonth).padStart(2,'0');}
 function getBilling(who){return memStore[bk(who)]||0;}
+function getPMA(who){return memStore[pk(who)]||0;}
+function parseCOP(v){if(!v)return 0;return parseFloat(String(v).replace(/[^0-9.]/g,''))||0;}
+function formatCOP(v){if(!v||v===0)return '$0';return '$'+Math.round(v).toLocaleString('es-CO');}
 function saveBilling(who,val){
   memStore[bk(who)]=val;
   try{localStorage.setItem('marly-'+bk(who),String(val));}catch(e){}
@@ -780,6 +787,16 @@ function loadBillingInputs(){
     if(pmaEl){var p=getPMA(who);pmaEl.value=p>0?p:''}
     updateVHr(who);
   });
+}
+
+function cambiarMes(d){
+  curMonth+=d;
+  if(curMonth>12){curMonth=1;curYear++;}
+  if(curMonth<1){curMonth=12;curYear--;}
+  if(curYear<2026){curYear=2026;curMonth=1;}
+  if(curYear>2027){curYear=2027;curMonth=12;}
+  loadEdits('cas');loadEdits('gar');loadBilling('cas');loadBilling('gar');loadPMA('cas');loadPMA('gar');
+  renderAll();
 }
 
 function renderAll(){
