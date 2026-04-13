@@ -714,6 +714,15 @@ var now=new Date();
 var curYear=now.getFullYear();
 var curMonth=now.getMonth()+1;
 if(curYear<2026){curYear=2026;curMonth=1;}
+var ANEST_NAMES=['Cendales','Ruiz','Lopierre','Perez','Tobos','Aguirre','Diaz','JB Silva','Mojica','LE Silva','Vargas','Cantillo','Arias','Gutierrez','Chamorro','Tellez','Taborda','Cruz','Alvarez','Turriago','Higuera','Castaneda','Garcia','Pay','Sanchez'];
+var INITIALS={
+  'Cendales':'LC','Ruiz':'AR','Diaz':'AD','Taborda':'AT','Vargas':'AV',
+  'Arias':'JMA','Pay':'JLP','Tellez':'JCT','Mojica':'CTM','Turriago':'RT',
+  'Sanchez':'ES','Aguirre':'LA','Cruz':'EC','Castaneda':'JPC','Garcia':'MCG',
+  'Gutierrez':'GG','Perez':'MP','JB Silva':'JBS','LE Silva':'LES',
+  'Lopierre':'EL','Tobos':'LT','Cantillo':'MJC','Chamorro':'CC','Higuera':'AH',
+  'Alvarez':'CA'
+};
 var SALARIO_BASE=2058698;
 var PMA_CASO=525000;
 function pk(who){return 'p-'+who+'-'+curYear+'-'+String(curMonth).padStart(2,'0');}
