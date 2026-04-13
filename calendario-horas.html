@@ -800,8 +800,14 @@ function cambiarMes(d){
 }
 
 function renderAll(){
-  document.getElementById('mn-label').textContent=MESES[curMonth]+' '+curYear;
-  renderPanel('Castaneda','cas');renderPanel('Garcia','gar');loadBillingInputs();
+  try{
+    document.getElementById('mn-label').textContent=MESES[curMonth]+' '+curYear;
+    renderPanel('Castaneda','cas');
+    renderPanel('Garcia','gar');
+    loadBillingInputs();
+  }catch(e){
+    console.error('renderAll error:',e.message,e.stack);
+  }
 }
 
 function renderPanel(doc,who){
