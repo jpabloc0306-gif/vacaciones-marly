@@ -719,6 +719,31 @@ function saveBilling(who,val){
   try{localStorage.setItem('marly-'+bk(who),String(val));}catch(e){}
   fsSync();
 }
+function savePMA(who,val){
+  memStore[pk(who)]=val;
+  try{localStorage.setItem('marly-'+pk(who),String(val));}catch(e){}
+  fsSync();
+}
+function loadEdits(who){
+  try{var v=localStorage.getItem('marly-'+sk(who));if(v)memStore[sk(who)]=JSON.parse(v);}catch(e){}
+}
+function loadBilling(who){
+  try{var v=localStorage.getItem('marly-'+bk(who));if(v)memStore[bk(who)]=parseFloat(v)||0;}catch(e){}
+}
+function loadPMA(who){
+  try{var v=localStorage.getItem('marly-'+pk(who));if(v)memStore[pk(who)]=parseInt(v)||0;}catch(e){}
+}
+function loadBillingInputs(){
+  ['cas','gar'].forEach(function(who){
+    var salas=getBilling(who);
+    var pma=getPMA(who);
+    var bEl=document.getElementById('bill-'+who);
+    var pEl=document.getElementById('pma-'+who);
+    if(bEl&&salas>0)bEl.value=salas.toLocaleString('es-CO');
+    if(pEl)pEl.value=pma||'';
+    updateVHr(who);
+  });
+}
 function calcBilling(who){
   if(who&&who.dataset)who=who.dataset.who;
   saveBilling(who,parseCOP(document.getElementById('bill-'+who).value));
@@ -1474,29 +1499,25 @@ function fsSaveAll(){
 }
 
 function fsLoadAll(callback){
+  var done=false;
+  function safe_cb(){if(!done){done=true;callback();}}
+  // Timeout: si Firestore tarda más de 4s, renderizar igual
+  var t=setTimeout(safe_cb,4000);
   fetch(FS_CAL+'?key='+FS_API)
-  .then(function(r){return r.json();})
+  .then(function(r){return r.ok?r.json():Promise.reject(r.status);})
   .then(function(data){
-    if(!data.fields){callback();return;}
-    Object.keys(data.fields).forEach(function(k){
-      var sv=data.fields[k].stringValue;
-      if(!sv){return;}
-      try{
-        var parsed=JSON.parse(sv);
-        memStore[k]=parsed;
-        localStorage.setItem('marly-'+k,sv);
-      } catch(e){
-        // numeric value
-        memStore[k]=parseFloat(sv)||0;
-        localStorage.setItem('marly-'+k,sv);
-      }
-    });
-    callback();
+    clearTimeout(t);
+    if(data&&data.fields){
+      Object.keys(data.fields).forEach(function(k){
+        var sv=data.fields[k]&&data.fields[k].stringValue;
+        if(!sv)return;
+        try{memStore[k]=JSON.parse(sv);}catch(e){memStore[k]=parseFloat(sv)||0;}
+        try{localStorage.setItem('marly-'+k,sv);}catch(e){}
+      });
+    }
+    safe_cb();
   })
-  .catch(function(){
-    // Offline: use localStorage cache (already loaded)
-    callback();
-  });
+  .catch(function(){clearTimeout(t);safe_cb();});
 }
 
 // ── FIRESTORE ─────────────────────────────────────────────────────────────────
@@ -1518,6 +1539,8 @@ function parseVacData(raw){
 loadEdits('cas');loadEdits('gar');loadBilling('cas');loadBilling('gar');loadPMA('cas');loadPMA('gar');
 var sdot=document.getElementById('sdot'),slabel=document.getElementById('slabel');
 sdot.className='sdot';slabel.textContent='Cargando datos...';
+// Render calendar immediately with local data so it's not blank
+renderAll();
 
 // Load calendar data from Firestore, then vacaciones
 fsLoadAll(function(){
