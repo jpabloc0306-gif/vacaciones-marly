@@ -207,7 +207,7 @@ border:1.5px solid transparent;}
 .dc.dc-split-base{background:transparent;}
 .dc.dc-split-base.turno-doble{border-color:rgba(255,68,68,0.65)!important;}
 .dc.turno-doble .dc-half{flex:1;display:flex;align-items:center;justify-content:center;padding:0.15rem 0.28rem;}
-.dc.turno-doble .dc-half.top{background:var(–dt-color,rgba(74,222,128,0.5));}
+.dc.turno-doble .dc-half.top{background:rgba(74,222,128,0.5);}
 .dc.turno-doble .dc-half.bot{background:rgba(255,68,68,0.35);}
 .dc.turno-doble .dc-num{position:absolute;top:0.26rem;left:0.28rem;z-index:2;margin:0;}
 .dc-tag-top{font-size:0.5rem;font-weight:700;text-align:center;line-height:1.3;color:inherit;}
@@ -905,11 +905,11 @@ function renderPanel(doc,who){
     var noteHtml='';
     if(edit&&edit.tcuad)noteHtml+='<div class="dc-note note-tcuad">TC: '+initials(edit.tcuad)+'</div>';
     if(edit&&(edit.favor||edit.favorSvc))noteHtml+='<div class="dc-note note-favor">Fav: '+(edit.favorSvc?'Srv':initials(edit.favor))+'</div>';
-    var styleAttr=hasDturno?' style="--dt-color:'+dturnoColor+'"':'';
+    var styleAttr='';
     cells+='<div class="'+cls+'"'+styleAttr+' onclick="openModal('+day+',\''+who+'\')">'
       +(hasDturno?
         '<div class="dc-num"><span>'+day+'</span>'+festPip+'</div>'
-        +'<div class="dc-half top"><span class="dc-tag-top" style="color:'+
+        +'<div class="dc-half top" style="background:'+dturnoColor+'"><span class="dc-tag-top" style="color:'+
         (edit.dturnoPos===1?'var(--c-p1)':edit.dturnoPos===7?'var(--c-mat)':(edit.dturnoPos===4||edit.dturnoPos===12)?'var(--c-consulta)':'var(--c-normal)')+
         '">'+tipoTag(edit.dturnoPos,'plantilla')+'</span></div>'
         +'<div class="dc-half bot"><span class="dc-tag-bot">Turno</span>'+noteHtml+'</div>'
