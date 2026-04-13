@@ -203,15 +203,14 @@ border:1.5px solid transparent;}
 .dc.edited{}
 
 /* ── TURNO DOBLE ── */
-.dc.turno-doble{position:relative;overflow:hidden;border-color:rgba(255,68,68,0.65)!important;background:transparent!important;display:flex;flex-direction:column;padding:0!important;}
-.dc.dc-split-base{background:transparent;}
-.dc.dc-split-base.turno-doble{border-color:rgba(255,68,68,0.65)!important;}
-.dc.turno-doble .dc-half{flex:1;display:flex;align-items:center;justify-content:center;padding:0.15rem 0.28rem;}
-.dc.turno-doble .dc-half.top{background:rgba(74,222,128,0.5);}
-.dc.turno-doble .dc-half.bot{background:rgba(255,68,68,0.35);}
-.dc.turno-doble .dc-num{position:absolute;top:0.26rem;left:0.28rem;z-index:2;margin:0;}
-.dc-tag-top{font-size:0.5rem;font-weight:700;text-align:center;line-height:1.3;color:inherit;}
-.dc-tag-bot{font-size:0.5rem;font-weight:700;text-align:center;line-height:1.3;color:var(–c-turno);}
+.dc.turno-doble{border-color:rgba(255,68,68,0.7)!important;position:relative;}
+.dc.dc-split-base{background:rgba(255,68,68,0.25);}
+.dc-split-top{position:absolute;top:0;left:0;right:0;height:50%;display:flex;align-items:center;justify-content:center;border-radius:9px 9px 0 0;overflow:hidden;}
+.dc-split-bot{position:absolute;bottom:0;left:0;right:0;height:50%;background:rgba(255,68,68,0.45);display:flex;align-items:center;justify-content:center;border-radius:0 0 9px 9px;}
+.dc-tag-top{font-size:0.52rem;font-weight:700;text-align:center;line-height:1.3;}
+.dc-tag-bot{font-size:0.52rem;font-weight:700;text-align:center;line-height:1.3;color:#ff6b6b;}
+.dc.turno-doble .dc-num{position:relative;z-index:3;}
+.dc.turno-doble .dc-body{display:none;}
 
 .dc.tcuad{border-color:rgba(251,146,60,0.85)!important;background:var(–b7)!important;}
 .dc.favor{border-color:rgba(245,200,66,0.8)!important;}
@@ -909,10 +908,9 @@ function renderPanel(doc,who){
     cells+='<div class="'+cls+'"'+styleAttr+' onclick="openModal('+day+',\''+who+'\')">'
       +(hasDturno?
         '<div class="dc-num"><span>'+day+'</span>'+festPip+'</div>'
-        +'<div class="dc-half top" style="background:'+dturnoColor+'"><span class="dc-tag-top" style="color:'+
-        (edit.dturnoPos===1?'var(--c-p1)':edit.dturnoPos===7?'var(--c-mat)':(edit.dturnoPos===4||edit.dturnoPos===12)?'var(--c-consulta)':'var(--c-normal)')+
-        '">'+tipoTag(edit.dturnoPos,'plantilla')+'</span></div>'
-        +'<div class="dc-half bot"><span class="dc-tag-bot">Turno</span>'+noteHtml+'</div>'
+        +'<div class="dc-split-top" style="background:'+dturnoColor+'">'
+        +'<span class="dc-tag-top" style="color:white;text-shadow:0 1px 2px rgba(0,0,0,0.5)">'+tipoTag(edit.dturnoPos,'plantilla')+'</span></div>'
+        +'<div class="dc-split-bot"><span class="dc-tag-bot">Turno</span></div>'
         :'<div class="dc-num"><span>'+day+'</span>'+festPip+'</div>'
         +'<div class="dc-body">'+(tag?'<div class="dc-tag">'+tag+'</div>':'')+noteHtml+'</div>')
       +'</div>';
