@@ -590,7 +590,10 @@ function tipoTag(pos, tipo){
 // ── MOTOR ─────────────────────────────────────────────────────────────────────
 var NAMES=['Leonardo Cendales','Andres Ruiz','Enrique Lopierre','Mauricio Perez','Laura Tobos','Luisa Aguirre','Andres Diaz','JB Silva','Carmen Teresa Mojica','Luis Eduardo Silva','Alexandra Vargas','Maria Jose Cantillo','Juan Manuel Arias','German Gutierrez','Cristian Chamorro','Juan Carlos Tellez','Angela Taborda','Edna Cruz','Luis Fernando Alvarez','Rafael Turriago','Carlos Higuera','Juan Pablo Castaneda','Maria Cecilia Garcia','Jose Luis Pay'];
 var NAME_TO_KEY={'Leonardo Cendales':'Cendales','Andres Ruiz':'Ruiz','Enrique Lopierre':'Lopierre','Mauricio Perez':'Perez','Laura Tobos':'Tobos','Luisa Aguirre':'Aguirre','Andres Diaz':'Diaz','JB Silva':'JB Silva','Carmen Teresa Mojica':'Mojica','Luis Eduardo Silva':'LE Silva','Alexandra Vargas':'Vargas','Maria Jose Cantillo':'Cantillo','Juan Manuel Arias':'Arias','German Gutierrez':'Gutierrez','Cristian Chamorro':'Chamorro','Juan Carlos Tellez':'Tellez','Angela Taborda':'Taborda','Edna Cruz':'Cruz','Luis Fernando Alvarez':'Alvarez','Rafael Turriago':'Turriago','Carlos Higuera':'Higuera','Juan Pablo Castaneda':'Castaneda','Maria Cecilia Garcia':'Garcia','Jose Luis Pay':'Pay'};
-var FIRESTORE_URL='https://firestore.googleapis.com/v1/projects/vacaciones-marly/databases/(default)/documents/vacaciones/datos?key=AIzaSyChxX6E972Rl-vPnKa4rirWtPYUPzhuo4w';
+var FS_API='AIzaSyBovPvnDU3qJFZAbLENudFX9no3x6h1CaE';
+var FS_BASE='https://firestore.googleapis.com/v1/projects/marly-calendario/databases/(default)/documents';
+var FIRESTORE_URL=FS_BASE+'/vacaciones/datos?key='+FS_API; // vacaciones (mismo formato)
+var FS_CAL=FS_BASE+'/calendario/datos'; // nuevo doc para datos del calendario
 var allVac=[];
 var PLANTILLA={1:{L:'Cruz',M:'Cruz',X:'Cruz',J:'Cruz',V:'Garcia',N:'Garcia'},2:{L:'Vargas',M:'Vargas',X:'Vargas',J:'Vargas',V:'Vargas',N:'Vargas'},3:{L:'Perez',M:'Tobos',X:'Tobos',J:'Tobos',V:'Tobos',N:'Tobos'},4:{L:'Chamorro',M:'Lopierre',X:'Lopierre',J:'Chamorro',V:'Chamorro',N:'Chamorro'},5:{L:'Taborda',M:'Taborda',X:'Taborda',J:'Taborda',V:'Sanchez',N:'Sanchez'},6:{L:'Arias',M:'Arias',X:'Arias',J:'Arias',V:'Aguirre',N:'Arias'},7:{L:'Garcia',M:'Pay',X:'Pay',J:'Pay',V:'Pay',N:'Pay'},8:{L:'Tellez',M:'Tellez',X:'Diaz',J:'Tellez',V:'Diaz',N:'Diaz'},9:{L:'JB Silva',M:'JB Silva',X:'Garcia',J:'JB Silva',V:'JB Silva',N:'Aguirre'},10:{L:'LE Silva',M:'LE Silva',X:'LE Silva',J:'LE Silva',V:'Higuera',N:'LE Silva'},11:{L:'Turriago',M:'Turriago',X:'Turriago',J:'Turriago',V:'Turriago',N:'Turriago'},12:{L:'Sanchez',M:'Alvarez',X:'Alvarez',J:'Gutierrez',V:'Gutierrez',N:'Gutierrez'},13:{L:'Cantillo',M:'Cantillo',X:'Cantillo',J:'Cantillo',V:'Lopierre',N:'Cantillo'},14:{L:'Mojica',M:'Mojica',X:'Tellez',J:'Mojica',V:'Mojica',N:''},15:{L:'',M:'Perez',X:'',J:'Perez',V:'',N:'Cendales'},16:{L:'Castaneda',M:'Aguirre',X:'Castaneda',J:'Castaneda',V:'Castaneda',N:'Castaneda'}};
 var NO_TURNO=['Cruz','Tellez','JB Silva','Perez','Taborda','Lopierre','Alvarez','Mojica'];
@@ -693,45 +696,28 @@ var memStore={};
 function sk(who){return 'e-'+who+'-'+curYear+'-'+String(curMonth).padStart(2,'0');}
 function bk(who){return 'b-'+who+'-'+curYear+'-'+String(curMonth).padStart(2,'0');}
 function getEdits(who){return memStore[sk(who)]||{};}
-function saveEdit(who,day,data){var k=sk(who);if(!memStore[k])memStore[k]={};memStore[k][day]=data;try{localStorage.setItem('marly-'+k,JSON.stringify(memStore[k]));}catch(e){}}
-function removeEdit(who,day){var k=sk(who);if(!memStore[k])memStore[k]={};delete memStore[k][day];try{localStorage.setItem('marly-'+k,JSON.stringify(memStore[k]));}catch(e){}}
-function loadEdits(who){try{var v=localStorage.getItem('marly-'+sk(who));if(v)memStore[sk(who)]=JSON.parse(v);}catch(e){}}
-
-var ANEST_NAMES=['Cendales','Ruiz','Lopierre','Perez','Tobos','Aguirre','Diaz','JB Silva','Mojica','LE Silva','Vargas','Cantillo','Arias','Gutierrez','Chamorro','Tellez','Taborda','Cruz','Alvarez','Turriago','Higuera','Castaneda','Garcia','Pay','Sanchez'];
-var INITIALS={
-  'Cendales':'LC','Ruiz':'AR','Diaz':'AD','Taborda':'AT','Vargas':'AV',
-  'Arias':'JMA','Pay':'JLP','Tellez':'JCT','Mojica':'CTM','Turriago':'RT',
-  'Sanchez':'ES','Aguirre':'LA','Cruz':'EC','Castaneda':'JPC','Garcia':'MCG',
-  'Gutierrez':'GG','Perez':'MP','JB Silva':'JBS','LE Silva':'LES',
-  'Lopierre':'EL','Tobos':'LT','Cantillo':'MJC','Chamorro':'CC','Higuera':'AH',
-  'Alvarez':'CA'
+function saveEdit(who,day,data){
+  var k=sk(who);
+  if(!memStore[k])memStore[k]={};
+  memStore[k][day]=data;
+  try{localStorage.setItem('marly-'+k,JSON.stringify(memStore[k]));}catch(e){}
+  fsSync();
+}
+function removeEdit(who,day){
+  var k=sk(who);
+  if(memStore[k])delete memStore[k][day];
+  try{localStorage.setItem('marly-'+k,JSON.stringify(memStore[k]||{}));}catch(e){}
+  fsSync();
 };
 function initials(name){return INITIALS[name]||name;}
 var SALARIO_BASE=2058698;
 var PMA_CASO=525000;
 function pk(who){return 'p-'+who+'-'+curYear+'-'+String(curMonth).padStart(2,'0');}
 function getBilling(who){return memStore[bk(who)]||0;}
-function saveBilling(who,val){memStore[bk(who)]=val;try{localStorage.setItem('marly-'+bk(who),String(val));}catch(e){}}
-function loadBilling(who){try{var v=localStorage.getItem('marly-'+bk(who));if(v)memStore[bk(who)]=parseFloat(v)||0;}catch(e){}}
-function getPMA(who){return memStore[pk(who)]||0;}
-function savePMA(who,val){memStore[pk(who)]=val;try{localStorage.setItem('marly-'+pk(who),String(val));}catch(e){}}
-function loadPMA(who){try{var v=localStorage.getItem('marly-'+pk(who));if(v)memStore[pk(who)]=parseInt(v)||0;}catch(e){}}
-function formatCOP(n){if(!n||isNaN(n))return '—';return '$\u00a0'+Math.round(n).toLocaleString('es-CO');}
-function parseCOP(str){return parseFloat(str.replace(/[^0-9.]/g,''))||0;}
-
-// ── MES ───────────────────────────────────────────────────────────────────────
-var now=new Date();
-var curYear=now.getFullYear();
-var curMonth=now.getMonth()+1;
-// clamp to 2026-2027 range
-if(curYear<2026){curYear=2026;curMonth=1;}
-if(curYear>2027){curYear=2027;curMonth=12;}
-
-function cambiarMes(d){
-  curMonth+=d;if(curMonth>12){curMonth=1;curYear++;}if(curMonth<1){curMonth=12;curYear--;}
-  if(curYear<2026){curYear=2026;curMonth=1;}if(curYear>2027){curYear=2027;curMonth=12;}
-  loadEdits('cas');loadEdits('gar');loadBilling('cas');loadBilling('gar');loadPMA('cas');loadPMA('gar');
-renderAll();
+function saveBilling(who,val){
+  memStore[bk(who)]=val;
+  try{localStorage.setItem('marly-'+bk(who),String(val));}catch(e){}
+  fsSync();
 }
 function calcBilling(who){
   if(who&&who.dataset)who=who.dataset.who;
@@ -1454,6 +1440,65 @@ function renderFinanzas(){
   document.getElementById('fin-billing').innerHTML=billingHtml;
 }
 
+// ── FIRESTORE SYNC ────────────────────────────────────────────────────────────
+var fsSyncTimer=null;
+function fsSync(){
+  // Debounce: wait 1.5s after last change before saving
+  clearTimeout(fsSyncTimer);
+  fsSyncTimer=setTimeout(fsSaveAll,1500);
+}
+
+function fsSaveAll(){
+  // Build payload: all memStore keys
+  var fields={};
+  Object.keys(memStore).forEach(function(k){
+    var v=memStore[k];
+    if(typeof v==='object'&&v!==null){
+      fields[k]={stringValue:JSON.stringify(v)};
+    } else {
+      fields[k]={stringValue:String(v||'')};
+    }
+  });
+  fetch(FS_CAL+'?key='+FS_API,{
+    method:'PATCH',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({fields:fields})
+  }).then(function(r){
+    var dot=document.getElementById('sdot'),lbl=document.getElementById('slabel');
+    if(r.ok){dot.className='sdot ok';lbl.textContent='Datos guardados en la nube';}
+    else{dot.className='sdot err';lbl.textContent='Error al guardar';}
+  }).catch(function(){
+    var dot=document.getElementById('sdot'),lbl=document.getElementById('slabel');
+    dot.className='sdot err';lbl.textContent='Sin conexion — guardado local';
+  });
+}
+
+function fsLoadAll(callback){
+  fetch(FS_CAL+'?key='+FS_API)
+  .then(function(r){return r.json();})
+  .then(function(data){
+    if(!data.fields){callback();return;}
+    Object.keys(data.fields).forEach(function(k){
+      var sv=data.fields[k].stringValue;
+      if(!sv){return;}
+      try{
+        var parsed=JSON.parse(sv);
+        memStore[k]=parsed;
+        localStorage.setItem('marly-'+k,sv);
+      } catch(e){
+        // numeric value
+        memStore[k]=parseFloat(sv)||0;
+        localStorage.setItem('marly-'+k,sv);
+      }
+    });
+    callback();
+  })
+  .catch(function(){
+    // Offline: use localStorage cache (already loaded)
+    callback();
+  });
+}
+
 // ── FIRESTORE ─────────────────────────────────────────────────────────────────
 function parseFSV(val){
   if(!val)return null;
@@ -1469,13 +1514,22 @@ function parseVacData(raw){
   return r;
 }
 
+// Load local cache first (instant)
 loadEdits('cas');loadEdits('gar');loadBilling('cas');loadBilling('gar');loadPMA('cas');loadPMA('gar');
 var sdot=document.getElementById('sdot'),slabel=document.getElementById('slabel');
-fetch(FIRESTORE_URL)
-  .then(function(r){return r.json();})
-  .then(function(data){if(data.fields){allVac=parseVacData(JSON.parse(parseFSV(data.fields.vacaciones)||'{}'));sdot.className='sdot ok';slabel.textContent='Vacaciones sincronizadas';}})
-  .catch(function(){sdot.className='sdot err';slabel.textContent='Error al cargar vacaciones';})
-  .finally(function(){renderAll();});
+sdot.className='sdot';slabel.textContent='Cargando datos...';
+
+// Load calendar data from Firestore, then vacaciones
+fsLoadAll(function(){
+  loadEdits('cas');loadEdits('gar');loadBilling('cas');loadBilling('gar');loadPMA('cas');loadPMA('gar');
+  renderAll();
+  // Now load vacaciones
+  fetch(FIRESTORE_URL)
+    .then(function(r){return r.json();})
+    .then(function(data){if(data.fields){allVac=parseVacData(JSON.parse(parseFSV(data.fields.vacaciones)||'{}'));sdot.className='sdot ok';slabel.textContent='Sincronizado';}})
+    .catch(function(){sdot.className='sdot err';slabel.textContent='Sin conexion';})
+    .finally(function(){renderAll();});
+});
 
 initHoldBtn();
 </script>
