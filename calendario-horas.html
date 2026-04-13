@@ -1,0 +1,1473 @@
+<!DOCTYPE html>
+
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Registro de Horas · Anestesiologia</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Syne+Mono&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --b9:#07101f;--b8:#0b1a30;--b7:#0f2244;--b6:#132b56;--b5:#1a3d78;
+  --b3:#4a7fd4;--b2:#8ab4e8;--b1:#c5d9f5;
+  --acc:#f5c842;
+  --wh:#f4f8ff;
+  --green-ui:#3dd68c;
+  --c-turno:#ff4444;
+  --c-posturno:#a0aec0;
+  --c-p1:#c084fc;
+  --c-mat:#fb923c;
+  --c-consulta:#38bdf8;
+  --c-normal:#4ade80;
+  --c-vac:#fbbf24;
+  --c-disp:#94a3b8;
+  --ff-d:'Syne',sans-serif;
+  --ff-b:'Outfit',sans-serif;
+  --ff-m:'Syne Mono',monospace;
+}
+body{font-family:var(--ff-b);background:var(--b9);color:var(--wh);min-height:100vh;}
+
+.sync-bar{text-align:center;padding:0.3rem;font-size:0.62rem;color:var(–b2);border-bottom:1px solid var(–b7);}
+.sdot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(–b5);margin-right:0.3rem;vertical-align:middle;animation:pulse 1.5s infinite;}
+.sdot.ok{background:var(–green-ui);animation:none;}
+.sdot.err{background:var(–c-turno);animation:none;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.25;}}
+
+.topbar{background:var(–b8);border-bottom:1px solid var(–b6);padding:0.7rem 1.5rem;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;gap:1rem;flex-wrap:wrap;}
+.topbar-title{font-family:var(–ff-d);font-size:1.05rem;font-weight:800;}
+.topbar-sub{font-size:0.58rem;color:var(–b2);margin-top:0.08rem;letter-spacing:0.08em;text-transform:uppercase;}
+.month-nav{display:flex;align-items:center;gap:0.75rem;}
+.mn-btn{width:30px;height:30px;border-radius:6px;border:1px solid var(–b5);background:var(–b7);color:var(–b2);font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.15s;}
+.mn-btn:hover{background:var(–b5);color:var(–wh);}
+.mn-label{font-family:var(–ff-d);font-size:0.95rem;font-weight:700;min-width:150px;text-align:center;}
+/* TABS */
+.tabs{display:flex;gap:0;border-bottom:1px solid var(–b6);background:var(–b8);position:sticky;top:37px;z-index:49;}
+.tab-btn{font-family:var(–ff-d);font-size:0.75rem;font-weight:700;padding:0.65rem 1.4rem;border:none;background:transparent;color:var(–b2);cursor:pointer;border-bottom:2px solid transparent;transition:all 0.15s;letter-spacing:0.04em;}
+.tab-btn:hover{color:var(–wh);}
+.tab-btn.active{color:var(–wh);border-bottom-color:var(–acc);}
+.tab-btn.fin-tab{position:relative;}
+.tab-btn.fin-tab .lock-dot{display:inline-block;width:5px;height:5px;border-radius:50%;background:var(–b3);margin-left:5px;vertical-align:middle;transition:background 0.3s;}
+.tab-btn.fin-tab.unlocked .lock-dot{background:var(–green-ui);}
+/* TAB CONTENT */
+.tab-content{display:none;}
+.tab-content.active{display:block;}
+/* PIN OVERLAY */
+.pin-overlay{position:fixed;inset:0;background:rgba(4,8,20,0.97);z-index:300;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.2rem;}
+.pin-title{font-family:var(–ff-d);font-size:1.2rem;font-weight:800;color:var(–wh);}
+.pin-sub{font-size:0.7rem;color:var(–b2);}
+.pin-hint{font-size:0.65rem;color:var(–b3);font-style:italic;}
+.hold-btn{font-family:var(–ff-d);font-size:0.8rem;font-weight:700;padding:0.9rem 2.5rem;border-radius:10px;border:2px solid var(–b5);background:var(–b7);color:var(–b2);cursor:pointer;transition:all 0.1s;user-select:none;-webkit-user-select:none;}
+.hold-btn:active{border-color:var(–acc);color:var(–acc);}
+.hold-progress{width:200px;height:4px;background:var(–b7);border-radius:2px;overflow:hidden;margin-top:-0.4rem;}
+.hold-bar{height:100%;width:0%;background:var(–acc);border-radius:2px;transition:width 0.05s linear;}
+
+.page{padding:1rem 1.5rem;display:grid;grid-template-columns:1fr 1fr;gap:1.2rem;}
+/* FINANZAS TAB */
+.fin-billing{display:grid;grid-template-columns:1fr 1fr;gap:1.2rem;margin-bottom:1.5rem;}
+.fin-panel{background:var(–b8);border:1px solid var(–b6);border-radius:12px;padding:1rem 1.2rem;}
+.fin-panel-name{font-family:var(–ff-d);font-size:0.95rem;font-weight:800;margin-bottom:0.7rem;}
+.fin-panel-name.cas{color:#7dd3f8;}
+.fin-panel-name.gar{color:#fdba84;}
+.cagr-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:0.7rem;margin-bottom:1.5rem;}
+.cagr-card{background:var(–b8);border:1px solid var(–b6);border-radius:10px;padding:0.85rem 1rem;}
+.cagr-label{font-size:0.56rem;text-transform:uppercase;letter-spacing:0.08em;color:var(–b3);margin-bottom:0.3rem;font-weight:600;}
+.cagr-val{font-family:var(–ff-m);font-size:1.4rem;color:var(–acc);font-weight:400;}
+.cagr-interp{font-size:0.62rem;color:var(–green-ui);margin-top:0.15rem;}
+.hist-table-wrap{overflow-x:auto;border-radius:10px;border:1px solid var(–b6);margin-bottom:1.5rem;}
+.hist-table{width:100%;border-collapse:collapse;font-size:0.72rem;}
+.hist-table th{padding:0.5rem 0.8rem;text-align:right;font-size:0.56rem;text-transform:uppercase;letter-spacing:0.06em;color:var(–b2);background:var(–b7);font-weight:600;}
+.hist-table th:first-child{text-align:left;}
+.hist-table td{padding:0.45rem 0.8rem;text-align:right;border-top:1px solid var(–b7);font-family:var(–ff-m);font-size:0.7rem;color:var(–b1);}
+.hist-table td:first-child{text-align:left;font-family:var(–ff-b);color:var(–b2);}
+.hist-table td.up{color:var(–green-ui);}
+.hist-table td.down{color:var(–c-turno);}
+.panel{background:var(–b8);border:1px solid var(–b6);border-radius:12px;overflow:hidden;}
+.panel-header{padding:0.85rem 1rem 0.8rem;border-bottom:1px solid var(–b6);}
+.ph-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:0.6rem;}
+.panel-name{font-family:var(–ff-d);font-size:1rem;font-weight:800;}
+.panel-name.cas{color:#7dd3f8;}
+.panel-name.gar{color:#fdba84;}
+.panel-sub{font-size:0.58rem;color:var(–b2);margin-top:0.08rem;text-transform:uppercase;letter-spacing:0.06em;}
+.panel-hrs-big{font-family:var(–ff-m);font-size:1.55rem;color:var(–acc);line-height:1;}
+.panel-hrs-label{font-size:0.55rem;color:var(–b2);text-transform:uppercase;letter-spacing:0.07em;margin-top:0.08rem;}
+
+.billing-row{display:flex;gap:0.45rem;align-items:flex-end;flex-wrap:wrap;margin-bottom:0.5rem;}
+.billing-field{display:flex;flex-direction:column;gap:0.16rem;flex:1;min-width:100px;}
+.billing-label{font-size:0.54rem;color:var(–b2);text-transform:uppercase;letter-spacing:0.06em;}
+.billing-input{font-family:var(–ff-m);font-size:0.77rem;background:var(–b7);border:1px solid var(–b5);border-radius:6px;color:var(–wh);padding:0.34rem 0.55rem;outline:none;width:100%;transition:border-color 0.15s;}
+.billing-input:focus{border-color:var(–acc);}
+.billing-result{background:var(–b7);border:1px solid var(–b6);border-radius:6px;padding:0.34rem 0.6rem;flex:1;min-width:100px;}
+.br-label{font-size:0.52rem;color:var(–b2);text-transform:uppercase;letter-spacing:0.06em;}
+.br-val{font-family:var(–ff-m);font-size:0.78rem;color:var(–green-ui);}
+.billing-toggle{display:flex;align-items:center;justify-content:space-between;margin-bottom:0.3rem;}
+.billing-toggle-label{font-size:0.54rem;color:var(–b2);text-transform:uppercase;letter-spacing:0.06em;}
+.eye-btn{background:none;border:none;cursor:pointer;color:var(–b3);font-size:0.85rem;padding:0.1rem 0.3rem;border-radius:4px;transition:color 0.15s;line-height:1;}
+.eye-btn:hover{color:var(–wh);}
+.billing-hidden{filter:blur(6px);user-select:none;pointer-events:none;}
+.total-box-wrap{position:relative;}
+.total-box{background:rgba(61,214,140,0.07);border:1px solid rgba(61,214,140,0.25);border-radius:6px;padding:0.38rem 0.7rem;margin-top:0.45rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.5rem;}
+.total-box .tb-label{font-size:0.52rem;color:var(–b2);text-transform:uppercase;letter-spacing:0.06em;}
+.total-box .tb-val{font-family:var(–ff-m);font-size:0.9rem;color:var(–green-ui);font-weight:600;}
+.total-box .tb-sub{font-size:0.58rem;color:var(–b3);}
+
+.btn-export{font-family:var(–ff-d);font-size:0.68rem;font-weight:700;padding:0.38rem 0.9rem;border-radius:6px;border:1.5px solid var(–b3);background:transparent;color:var(–b2);cursor:pointer;width:100%;transition:all 0.15s;letter-spacing:0.03em;}
+.btn-export:hover{background:var(–b5);color:var(–wh);border-color:var(–b2);}
+
+.stat-row{display:flex;border-bottom:1px solid var(–b7);}
+.stat-item{flex:1;padding:0.3rem 0.4rem;border-right:1px solid var(–b7);}
+.stat-item:last-child{border-right:none;}
+.stat-item .sv{font-family:var(–ff-m);font-size:0.78rem;color:var(–wh);}
+.stat-item .sl{font-size:0.5rem;color:var(–b3);text-transform:uppercase;letter-spacing:0.04em;margin-top:0.04rem;}
+
+.cal-wrap{padding:0.6rem;}
+.cal-dh-row{display:grid;grid-template-columns:repeat(7,1fr);margin-bottom:0.2rem;}
+.cal-dh{text-align:center;font-size:0.54rem;font-weight:600;letter-spacing:0.07em;text-transform:uppercase;color:var(–b3);padding:0.1rem 0;}
+.cal-dh.fds{color:var(–b5);}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;}
+
+/* ── RESUMEN ANUAL ─────────────────────────────────────────────────────────── */
+.anual-section{max-width:900px;margin:0 auto;padding:1.5rem 1.5rem 3rem;}
+.trim-section{margin-bottom:1.5rem;}
+.trim-title{font-family:var(–ff-d);font-size:0.75rem;font-weight:700;color:var(–b1);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.7rem;}
+.trim-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:0.6rem;}
+.trim-card{background:var(–b8);border:1px solid var(–b6);border-radius:10px;padding:0.75rem 0.8rem;}
+.trim-label{font-size:0.58rem;text-transform:uppercase;letter-spacing:0.07em;color:var(–b3);margin-bottom:0.35rem;font-weight:600;}
+.trim-vals{display:flex;flex-direction:column;gap:0.18rem;}
+.trim-row{display:flex;justify-content:space-between;align-items:center;font-size:0.68rem;}
+.trim-row .tr-year{color:var(–b3);font-size:0.58rem;}
+.trim-row .tr-val{font-family:var(–ff-m);font-size:0.72rem;}
+.trim-row .tr-val.cas{color:#7dd3f8;}
+.trim-row .tr-val.gar{color:#fdba84;}
+.trim-delta{font-size:0.6rem;font-weight:700;margin-top:0.35rem;padding-top:0.3rem;border-top:1px solid var(–b7);}
+.trim-delta.up{color:var(–green-ui);}
+.trim-delta.down{color:var(–c-turno);}
+.trim-delta.flat{color:var(–b3);}
+.anual-table th.prev-col{color:rgba(255,255,255,0.25);opacity:0.6;}
+.anual-table td.prev-val{color:rgba(255,255,255,0.3);font-size:0.64rem;}
+.anual-table tr.separator td{border-top:2px solid var(–b5);background:var(–b7);}
+.anual-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:1.2rem;flex-wrap:wrap;gap:0.5rem;}
+.anual-title{font-family:var(–ff-d);font-size:1.1rem;font-weight:800;color:var(–wh);}
+.anual-sub{font-size:0.6rem;color:var(–b2);text-transform:uppercase;letter-spacing:0.08em;margin-top:0.1rem;}
+.anual-year-toggle{display:flex;align-items:center;gap:0.5rem;}
+.ay-btn{width:28px;height:28px;border-radius:6px;border:1px solid var(–b5);background:var(–b7);color:var(–b2);font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.15s;}
+.ay-btn:hover{background:var(–b5);color:var(–wh);}
+.ay-label{font-family:var(–ff-d);font-size:0.9rem;font-weight:700;color:var(–wh);min-width:40px;text-align:center;}
+
+.anual-totals{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:0.6rem;margin-bottom:1.2rem;}
+.at-card{background:var(–b8);border:1px solid var(–b6);border-radius:10px;padding:0.75rem 0.9rem;}
+.at-label{font-size:0.54rem;text-transform:uppercase;letter-spacing:0.07em;color:var(–b2);margin-bottom:0.2rem;}
+.at-val{font-family:var(–ff-m);font-size:1rem;font-weight:600;}
+.at-val.cas{color:#7dd3f8;}
+.at-val.gar{color:#fdba84;}
+.at-val.both{color:var(–green-ui);}
+.at-sub{font-size:0.56rem;color:var(–b3);margin-top:0.12rem;}
+
+.anual-table-wrap{overflow-x:auto;margin-bottom:1.5rem;border-radius:10px;border:1px solid var(–b6);}
+.anual-table{width:100%;border-collapse:collapse;font-size:0.72rem;}
+.anual-table thead tr{background:var(–b7);}
+.anual-table th{padding:0.5rem 0.7rem;text-align:right;font-size:0.56rem;text-transform:uppercase;letter-spacing:0.06em;color:var(–b2);font-weight:600;white-space:nowrap;}
+.anual-table th:first-child{text-align:left;}
+.anual-table th.cas-col{color:#7dd3f8;opacity:0.8;}
+.anual-table th.gar-col{color:#fdba84;opacity:0.8;}
+.anual-table td{padding:0.45rem 0.7rem;text-align:right;border-top:1px solid var(–b7);font-family:var(–ff-m);font-size:0.7rem;color:var(–b1);}
+.anual-table td:first-child{text-align:left;font-family:var(–ff-b);color:var(–b2);font-size:0.72rem;}
+.anual-table tr.current-month td{background:rgba(245,200,66,0.05);}
+.anual-table tr.current-month td:first-child{color:var(–acc);font-weight:600;}
+.anual-table td.cas-val{color:#7dd3f8;}
+.anual-table td.gar-val{color:#fdba84;}
+.anual-table tfoot td{font-weight:700;color:var(–wh);background:var(–b7);border-top:2px solid var(–b5);}
+
+.chart-wrap{background:var(–b8);border:1px solid var(–b6);border-radius:10px;padding:1rem 1.2rem;}
+.chart-title{font-size:0.65rem;text-transform:uppercase;letter-spacing:0.08em;color:var(–b2);margin-bottom:0.5rem;font-weight:600;}
+.chart-legend{display:flex;gap:1rem;margin-bottom:0.8rem;}
+.chart-legend span{font-size:0.65rem;color:var(–b2);}
+.cl-dot{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:0.3rem;vertical-align:middle;}
+.chart-bars{display:flex;align-items:flex-end;gap:4px;height:120px;padding-bottom:0;}
+.chart-bar-group{flex:1;display:flex;gap:2px;align-items:flex-end;}
+.chart-bar{flex:1;border-radius:3px 3px 0 0;min-height:2px;transition:height 0.4s ease;}
+.chart-bar.cas{background:rgba(125,211,248,0.7);}
+.chart-bar.gar{background:rgba(253,186,132,0.7);}
+.chart-months{display:flex;gap:4px;margin-top:0.3rem;}
+.chart-month{flex:1;text-align:center;font-size:0.48rem;color:var(–b3);text-transform:uppercase;}
+.chart-month.cur{color:var(–acc);}
+
+/* ── CELDAS ──────────────────────────────────────────────────────────────── */
+.dc{border-radius:6px;min-height:54px;padding:0.26rem 0.28rem;cursor:pointer;
+transition:filter 0.12s,transform 0.08s;display:flex;flex-direction:column;
+border:1.5px solid transparent;}
+.dc:hover{filter:brightness(1.2);transform:scale(1.04);}
+.dc:active{transform:scale(0.97);}
+.dc.empty{background:transparent;border-color:transparent;cursor:default;pointer-events:none;}
+.dc.edited{}
+
+/* ── TURNO DOBLE ── */
+.dc.turno-doble{position:relative;overflow:hidden;border-color:rgba(255,68,68,0.65)!important;background:transparent!important;display:flex;flex-direction:column;padding:0!important;}
+.dc.turno-doble .dc-half{flex:1;display:flex;align-items:center;justify-content:center;padding:0.15rem 0.28rem;}
+.dc.turno-doble .dc-half.top{background:var(–dt-color,rgba(74,222,128,0.5));}
+.dc.turno-doble .dc-half.bot{background:rgba(255,68,68,0.35);}
+.dc.turno-doble .dc-num{position:absolute;top:0.26rem;left:0.28rem;z-index:2;margin:0;}
+.dc-tag-top{font-size:0.5rem;font-weight:700;text-align:center;line-height:1.3;color:inherit;}
+.dc-tag-bot{font-size:0.5rem;font-weight:700;text-align:center;line-height:1.3;color:var(–c-turno);}
+
+.dc.tcuad{border-color:rgba(251,146,60,0.85)!important;background:var(–b7)!important;}
+.dc.favor{border-color:rgba(245,200,66,0.8)!important;}
+.dc.today{outline:2px solid var(–acc);outline-offset:1px;}
+
+/* con trabajo */
+.dc.tipo-turno    {background:rgba(255,68,68,0.28);   border-color:rgba(255,68,68,0.65);}
+.dc.tipo-posturno {background:rgba(160,174,192,0.18); border-color:rgba(160,174,192,0.45);}
+.dc.tipo-p1       {background:rgba(192,132,252,0.26); border-color:rgba(192,132,252,0.65);}
+.dc.tipo-mat      {background:rgba(251,146,60,0.26);  border-color:rgba(251,146,60,0.65);}
+.dc.tipo-consulta {background:rgba(56,189,248,0.24);  border-color:rgba(56,189,248,0.6);}
+.dc.tipo-normal   {background:rgba(74,222,128,0.22);  border-color:rgba(74,222,128,0.55);}
+.dc.tipo-vac      {background:rgba(251,191,36,0.14);  border-color:rgba(251,191,36,0.35);}
+/* disponible: gris azulado con etiqueta */
+.dc.tipo-disp     {background:rgba(71,85,105,0.45);   border-color:rgba(100,116,139,0.55);}
+/* libre: base oscuro neutro */
+.dc.tipo-libre    {background:var(–b7);border-color:var(–b6);}
+/* sab que van: verde igual que normal */
+.dc.tipo-sab-van  {background:rgba(74,222,128,0.22);  border-color:rgba(74,222,128,0.55);}
+/* fds/dom sin trabajo */
+.dc.fds-off       {background:rgba(15,34,68,0.7);border-color:rgba(19,43,86,0.5);opacity:0.55;}
+/* festivo: borde dorado */
+.dc.festivo       {background:rgba(245,200,66,0.06);border-color:rgba(245,200,66,0.35);}
+
+/* números */
+.dc-num{font-family:var(–ff-m);font-size:0.6rem;line-height:1;margin-bottom:0.1rem;display:flex;align-items:center;gap:0.2rem;}
+.dc-num .fest-pip{width:5px;height:5px;border-radius:50%;background:var(–acc);flex-shrink:0;opacity:0.9;}
+.dc.tipo-turno    .dc-num{color:var(–c-turno);}
+.dc.tipo-posturno .dc-num{color:var(–c-posturno);}
+.dc.tipo-p1       .dc-num{color:var(–c-p1);}
+.dc.tipo-mat      .dc-num{color:var(–c-mat);}
+.dc.tipo-consulta .dc-num{color:var(–c-consulta);}
+.dc.tipo-normal   .dc-num,.dc.tipo-sab-van .dc-num{color:var(–c-normal);}
+.dc.tipo-vac      .dc-num{color:var(–c-vac);}
+.dc.tipo-disp     .dc-num{color:var(–c-disp);}
+.dc.tipo-libre    .dc-num{color:var(–b3);}
+.dc.fds-off       .dc-num{color:var(–b5);}
+.dc.festivo       .dc-num{color:var(–acc);}
+.dc.today         .dc-num{color:var(–acc)!important;}
+.dc.tcuad         .dc-num{color:rgba(251,146,60,0.7);}
+
+/* tags */
+.dc-body{flex:1;display:flex;flex-direction:column;justify-content:flex-end;}
+.dc-tag{font-size:0.5rem;font-weight:700;padding:0.1rem 0.24rem;border-radius:3px;line-height:1.3;text-align:center;}
+.dc.tipo-turno    .dc-tag{background:rgba(255,68,68,0.3);    color:var(–c-turno);}
+.dc.tipo-posturno .dc-tag{background:rgba(160,174,192,0.22); color:var(–c-posturno);}
+.dc.tipo-p1       .dc-tag{background:rgba(192,132,252,0.3);  color:var(–c-p1);}
+.dc.tipo-mat      .dc-tag{background:rgba(251,146,60,0.3);   color:var(–c-mat);}
+.dc.tipo-consulta .dc-tag{background:rgba(56,189,248,0.28);  color:var(–c-consulta);}
+.dc.tipo-normal   .dc-tag,.dc.tipo-sab-van .dc-tag{background:rgba(74,222,128,0.25);color:var(–c-normal);}
+.dc.tipo-vac      .dc-tag{background:rgba(251,191,36,0.2);   color:var(–c-vac);}
+.dc.tipo-disp     .dc-tag{background:rgba(100,116,139,0.4);  color:var(–c-disp);}
+.dc.tipo-libre    .dc-tag{color:rgba(255,255,255,0.2);font-weight:400;}
+.dc.tcuad         .dc-tag{background:none!important;color:rgba(255,255,255,0.18)!important;font-weight:400;}
+.dc.fds-off       .dc-tag{color:rgba(255,255,255,0.22);font-weight:400;}
+.dc.festivo.tipo-libre .dc-tag{color:rgba(245,200,66,0.3);font-weight:400;}
+
+/* MODAL */
+.mo{position:fixed;inset:0;background:rgba(4,8,20,0.92);z-index:200;display:none;align-items:center;justify-content:center;padding:1rem;backdrop-filter:blur(8px);}
+.mo.open{display:flex;}
+.mbox{background:var(–b8);border:1px solid var(–b5);border-radius:14px;padding:1.3rem;max-width:360px;width:100%;animation:mIn 0.18s ease-out;}
+@keyframes mIn{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:translateY(0);}}
+.mtop{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:0.85rem;}
+.mdate{font-family:var(–ff-d);font-size:1.2rem;font-weight:800;}
+.mdow{font-size:0.63rem;color:var(–b2);margin-top:0.08rem;text-transform:uppercase;letter-spacing:0.07em;}
+.mfest-badge{display:inline-block;font-size:0.55rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;background:rgba(245,200,66,0.15);color:var(–acc);border:1px solid rgba(245,200,66,0.3);border-radius:4px;padding:0.08rem 0.4rem;margin-left:0.4rem;vertical-align:middle;}
+.mclose{background:var(–b7);border:1px solid var(–b5);color:var(–b2);width:26px;height:26px;border-radius:6px;cursor:pointer;font-size:0.85rem;display:flex;align-items:center;justify-content:center;}
+.mclose:hover{background:var(–b6);color:var(–wh);}
+.msec{margin-bottom:0.7rem;}
+.mst{font-size:0.54rem;text-transform:uppercase;letter-spacing:0.1em;color:var(–b3);margin-bottom:0.28rem;font-weight:600;}
+.minfo-chip{display:inline-block;font-size:0.68rem;padding:0.18rem 0.52rem;border-radius:5px;font-weight:600;}
+.minfo-chip.cas{background:rgba(125,211,248,0.18);color:#7dd3f8;}
+.minfo-chip.gar{background:rgba(253,186,132,0.18);color:#fdba84;}
+.minfo-text{font-size:0.72rem;color:var(–b1);margin-top:0.25rem;}
+.mfield{margin-bottom:0.5rem;}
+.mfield label{font-size:0.54rem;text-transform:uppercase;letter-spacing:0.08em;color:var(–b2);display:block;margin-bottom:0.18rem;font-weight:600;}
+.mfield select,.mfield input[type=number]{width:100%;font-family:var(–ff-m);font-size:0.78rem;background:var(–b7);border:1px solid var(–b5);border-radius:7px;color:var(–wh);padding:0.4rem 0.65rem;outline:none;transition:border-color 0.15s;cursor:pointer;-moz-appearance:textfield;}
+.mfield select:focus,.mfield input[type=number]:focus{border-color:var(–acc);}
+.mfield input[type=number]::-webkit-inner-spin-button{opacity:0.3;}
+.mbtn-row{display:flex;gap:0.45rem;margin-top:0.7rem;}
+.mbtn{font-family:var(–ff-d);font-size:0.76rem;font-weight:700;padding:0.44rem 1rem;border-radius:7px;border:none;cursor:pointer;flex:1;transition:all 0.15s;}
+.mbtn.save{background:var(–acc);color:#0a0f1a;}
+.mbtn.save:hover{background:#f8d860;}
+.mbtn.reset{background:var(–b7);color:var(–b2);border:1px solid var(–b5);}
+.mbtn.reset:hover{background:var(–b6);color:var(–wh);}
+.mhint{font-size:0.59rem;color:var(–b3);margin-bottom:0.35rem;font-style:italic;}
+.mfield select.wide{font-size:0.76rem;}
+.mtag-row{display:flex;gap:0.4rem;flex-wrap:wrap;margin-bottom:0.55rem;}
+.mtag{font-size:0.65rem;padding:0.28rem 0.7rem;border-radius:5px;border:1.5px solid var(–b5);background:var(–b7);color:var(–b2);cursor:pointer;font-family:var(–ff-b);transition:all 0.15s;}
+.mtag:hover{border-color:var(–b3);color:var(–wh);}
+.mtag.active-t{background:rgba(255,68,68,0.2);border-color:var(–c-turno);color:var(–c-turno);}
+.mtag.active-f{background:rgba(74,222,128,0.15);border-color:var(–c-normal);color:var(–c-normal);}
+.mfield-note{font-size:0.62rem;color:var(–b2);margin-top:0.18rem;font-style:italic;}
+.dc-note{font-size:0.46rem;line-height:1.2;margin-top:1px;text-overflow:ellipsis;overflow:hidden;white-space:nowrap;}
+.dc-note.note-tcuad{color:#fb923c;font-weight:700;font-size:0.5rem;}
+.dc-note.note-favor{color:rgba(245,200,66,0.85);font-weight:600;}
+
+@media(max-width:860px){
+.page{grid-template-columns:1fr;}
+.topbar{flex-direction:column;gap:0.6rem;align-items:flex-start;}
+}
+</style>
+
+</head>
+<body>
+
+<div class="sync-bar"><span class="sdot" id="sdot"></span><span id="slabel">Cargando vacaciones...</span></div>
+
+<div class="topbar">
+  <div>
+    <div class="topbar-title">Anestesiologia · Marly</div>
+  </div>
+  <div class="month-nav">
+    <button class="mn-btn" onclick="cambiarMes(-1)">&#8249;</button>
+    <div class="mn-label" id="mn-label"></div>
+    <button class="mn-btn" onclick="cambiarMes(1)">&#8250;</button>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab-btn active" id="tab-btn-cal" onclick="switchTab('cal')">Calendario</button>
+  <button class="tab-btn" id="tab-btn-anual" onclick="switchTab('anual')">Resumen anual</button>
+  <button class="tab-btn fin-tab" id="tab-fin-btn" onclick="tryFinanzas()">Finanzas <span class="lock-dot"></span></button>
+</div>
+
+<!-- PIN OVERLAY -->
+
+<div class="pin-overlay" id="pin-overlay" style="display:none;">
+  <div class="pin-title">Finanzas</div>
+  <div class="pin-sub">Mantén presionado para acceder</div>
+  <button class="hold-btn" id="hold-btn">Mantener presionado</button>
+  <div class="hold-progress"><div class="hold-bar" id="hold-bar"></div></div>
+  <div class="pin-hint">Suelta para cancelar</div>
+</div>
+
+<div class="tab-content active" id="tab-cal">
+<div class="page">
+  <div class="panel">
+    <div class="panel-header">
+      <div class="ph-top">
+        <div><div class="panel-name cas">Castaneda</div><div class="panel-sub">Juan Pablo</div></div>
+        <div style="text-align:right">
+          <div class="panel-hrs-big" id="hrs-cas">0</div>
+          <div class="panel-hrs-label">horas este mes</div>
+        </div>
+      </div>
+      <div class="billing-toggle">
+        <span class="billing-toggle-label">Facturacion</span>
+        <button class="eye-btn" onclick="toggleBilling('cas')" id="eye-cas" title="Mostrar/ocultar">&#128065;</button>
+      </div>
+      <div id="billing-wrap-cas" class="billing-hidden">
+        <div class="billing-row">
+          <div class="billing-field">
+            <div class="billing-label">Salas (COP)</div>
+            <input class="billing-input" id="bill-cas" type="text" placeholder="$ 0" oninput="calcBilling('cas')" />
+          </div>
+          <div class="billing-field">
+            <div class="billing-label">Casos PMA</div>
+            <input class="billing-input" id="pma-cas" type="number" min="0" placeholder="0" oninput="calcBilling('cas')" style="width:100%" />
+          </div>
+          <div class="billing-result">
+            <div class="br-label">Valor / hora</div>
+            <div class="br-val" id="vhr-cas">—</div>
+          </div>
+        </div>
+        <div class="total-box">
+          <div>
+            <div class="tb-label">Total mes</div>
+            <div class="tb-sub" id="desglose-cas"></div>
+          </div>
+          <div class="tb-val" id="total-cas">—</div>
+        </div>
+      </div>
+      <button class="btn-export" onclick="exportarICS('cas')">Exportar al calendario (.ics)</button>
+    </div>
+    <div class="stat-row" id="stats-cas"></div>
+    <div class="cal-wrap">
+      <div class="cal-dh-row">
+        <div class="cal-dh">L</div><div class="cal-dh">M</div><div class="cal-dh">X</div>
+        <div class="cal-dh">J</div><div class="cal-dh">V</div>
+        <div class="cal-dh fds">S</div><div class="cal-dh fds">D</div>
+      </div>
+      <div class="cal-grid" id="grid-cas"></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-header">
+      <div class="ph-top">
+        <div><div class="panel-name gar">Garcia</div><div class="panel-sub">Maria Cecilia</div></div>
+        <div style="text-align:right">
+          <div class="panel-hrs-big" id="hrs-gar">0</div>
+          <div class="panel-hrs-label">horas este mes</div>
+        </div>
+      </div>
+      <div class="billing-toggle">
+        <span class="billing-toggle-label">Facturacion</span>
+        <button class="eye-btn" onclick="toggleBilling('gar')" id="eye-gar" title="Mostrar/ocultar">&#128065;</button>
+      </div>
+      <div id="billing-wrap-gar" class="billing-hidden">
+        <div class="billing-row">
+          <div class="billing-field">
+            <div class="billing-label">Salas (COP)</div>
+            <input class="billing-input" id="bill-gar" type="text" placeholder="$ 0" oninput="calcBilling('gar')" />
+          </div>
+          <div class="billing-field">
+            <div class="billing-label">Casos PMA</div>
+            <input class="billing-input" id="pma-gar" type="number" min="0" placeholder="0" oninput="calcBilling('gar')" style="width:100%" />
+          </div>
+          <div class="billing-result">
+            <div class="br-label">Valor / hora</div>
+            <div class="br-val" id="vhr-gar">—</div>
+          </div>
+        </div>
+        <div class="total-box">
+          <div>
+            <div class="tb-label">Total mes</div>
+            <div class="tb-sub" id="desglose-gar"></div>
+          </div>
+          <div class="tb-val" id="total-gar">—</div>
+        </div>
+      </div>
+      <button class="btn-export" onclick="exportarICS('gar')">Exportar al calendario (.ics)</button>
+    </div>
+    <div class="stat-row" id="stats-gar"></div>
+    <div class="cal-wrap">
+      <div class="cal-dh-row">
+        <div class="cal-dh">L</div><div class="cal-dh">M</div><div class="cal-dh">X</div>
+        <div class="cal-dh">J</div><div class="cal-dh">V</div>
+        <div class="cal-dh fds">S</div><div class="cal-dh fds">D</div>
+      </div>
+      <div class="cal-grid" id="grid-gar"></div>
+    </div>
+  </div>
+</div>
+</div><!-- end tab-cal -->
+
+<div class="tab-content" id="tab-anual">
+<!-- RESUMEN ANUAL -->
+<div class="anual-section" id="anual-section">
+  <div class="anual-header">
+    <div>
+      <div class="anual-title">Resumen Anual</div>
+      <div class="anual-sub" id="anual-year-label"></div>
+    </div>
+    <div class="anual-year-toggle">
+      <button class="ay-btn" onclick="cambiarAnio(-1)">&#8249;</button>
+      <span class="ay-label" id="ay-label">2026</span>
+      <button class="ay-btn" onclick="cambiarAnio(1)">&#8250;</button>
+    </div>
+  </div>
+
+  <!-- Totales anuales -->
+
+  <div class="anual-totals" id="anual-totals"></div>
+
+  <!-- Comparacion trimestral -->
+
+  <div class="trim-section">
+    <div class="trim-title" id="trim-title">Comparacion trimestral</div>
+    <div class="trim-grid" id="trim-grid"></div>
+  </div>
+
+  <!-- Tabla mensual -->
+
+  <div class="anual-table-wrap">
+    <table class="anual-table" id="anual-table">
+      <thead>
+        <tr>
+          <th>Mes</th>
+          <th class="cas-col">Horas Cas.</th>
+          <th class="cas-col">Total Cas.</th>
+          <th class="prev-col">2025 Cas.</th>
+          <th class="cas-col">Var.</th>
+          <th class="gar-col">Horas Gar.</th>
+          <th class="gar-col">Total Gar.</th>
+          <th class="prev-col">2025 Gar.</th>
+          <th class="gar-col">Var.</th>
+        </tr>
+      </thead>
+      <tbody id="anual-tbody"></tbody>
+    </table>
+  </div>
+
+  <!-- Barras de ingresos -->
+
+  <div class="chart-wrap">
+    <div class="chart-title">Ingresos mensuales</div>
+    <div class="chart-legend">
+      <span class="cl-dot" style="background:#7dd3f8"></span><span>Castaneda</span>
+      <span class="cl-dot" style="background:#fdba84"></span><span>Garcia</span>
+    </div>
+    <div class="chart-bars" id="chart-bars"></div>
+    <div class="chart-months" id="chart-months"></div>
+  </div>
+</div>
+</div><!-- end tab-anual -->
+
+<!-- FINANZAS TAB -->
+
+<div class="tab-content" id="tab-fin">
+  <div class="fin-locked" id="fin-locked">
+    <div style="text-align:center;padding:4rem 2rem;color:var(--b3);font-size:0.8rem;">Accede desde la pestana Finanzas</div>
+  </div>
+  <div class="fin-content" id="fin-content" style="display:none;">
+    <!-- CAGR cards -->
+    <div class="anual-section">
+      <div class="anual-header"><div><div class="anual-title">Analisis Financiero</div><div class="anual-sub">CAGR · Ingresos historicos · Proyecciones</div></div>
+      <button class="ay-btn" onclick="lockFinanzas()" style="font-size:0.7rem;width:auto;padding:0 0.8rem;">Bloquear</button></div>
+      <!-- CAGR -->
+      <div id="cagr-section"></div>
+      <!-- HIST INGRESOS -->
+      <div id="hist-section"></div>
+      <!-- Billing panels moved here -->
+      <div class="fin-billing" id="fin-billing"></div>
+    </div>
+  </div>
+</div><!-- end tab-fin -->
+
+<div class="mo" id="mo" onclick="closeModal(event)">
+  <div class="mbox" id="mbox"></div>
+</div>
+
+<script>
+// ── HORAS ─────────────────────────────────────────────────────────────────────
+var HORAS_SEMANA={1:12,2:6,3:12,4:9,5:12,6:12,7:12,8:10,9:12,10:0,11:8,12:9,13:6,14:5,15:4,16:2};
+var HORAS_SAB={1:12,2:10,3:8,4:8,5:6,6:6,7:12,8:3,11:5,12:4};
+var HORAS_DOMFEST={1:12,7:12};
+
+var POS_SEMANA={0:'— Libre',1:'P1 — Disp. nocturna (12h)',2:'P2 (6h)',3:'P3 (12h)',4:'P4 — Consulta (9h)',5:'P5 (12h)',6:'P6 (12h)',7:'P7 — Maternidad (12h)',8:'P8 (10h)',9:'P9 — Turno noche (12h)',10:'P10 — Posturno (0h)',11:'P11 (8h)',12:'P12 — Consulta (9h)',13:'P13 (6h)',14:'P14 (5h)',15:'P15 (4h)',16:'P16 (2h)'};
+var POS_SAB={0:'— No trabajo',1:'P1 — Disp. todo el dia (12h)',2:'P2 (10h)',3:'P3 (8h)',4:'P4 (8h)',5:'P5 (6h)',6:'P6 (6h)',7:'P7 — Maternidad (12h)',8:'P8 — Consulta (3h)',11:'P11 (5h)',12:'P12 (4h)'};
+var POS_DOMFEST={0:'— No trabajo',1:'P1 — Disp. todo el dia (12h)',7:'P7 — Maternidad (12h)'};
+
+var KEYS_SEMANA=[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16];
+var KEYS_SAB=[0,1,2,3,4,5,6,7,8,11,12];
+var KEYS_DOMFEST=[0,1,7];
+
+function horasByPos(pos,dayType){
+  if(dayType==='sab')return HORAS_SAB[pos]||0;
+  if(dayType==='domfest')return HORAS_DOMFEST[pos]||0;
+  return HORAS_SEMANA[pos]||0;
+}
+function calcJornadas(hrs){if(!hrs||hrs<=0)return 0;return Math.ceil(hrs/6);}
+
+// ── COLOR / TAG ───────────────────────────────────────────────────────────────
+// tipo puede ser: turno|posturno|p1|mat|consulta|normal|sab-van|vac|disp|libre|fds-off
+function tipoClase(pos, tipo, dayType){
+  if(tipo==='vac')    return 'tipo-vac';
+  if(tipo==='disp')   return 'tipo-disp';
+  if(tipo==='sab-van')return 'tipo-sab-van';
+  if(tipo==='libre')  return 'tipo-libre';
+  if(tipo==='fds-off')return 'fds-off';
+  // con posición asignada
+  if(!pos||pos===0)   return 'tipo-libre';
+  if(pos===9)         return 'tipo-turno';
+  if(pos===10)        return 'tipo-posturno';
+  if(pos===1)         return 'tipo-p1';
+  if(pos===7)         return 'tipo-mat';
+  if(pos===4||pos===12) return 'tipo-consulta';
+  if(pos===8&&dayType==='sab') return 'tipo-consulta';
+  return 'tipo-normal';
+}
+function tipoTag(pos, tipo){
+  if(tipo==='vac')    return 'Vac.';
+  if(tipo==='disp')   return 'Disp.';
+  if(tipo==='sab-van')return '';        // verde sin texto hasta que editen
+  if(tipo==='libre'||tipo==='fds-off')return 'Libre';
+  if(!pos||pos===0)   return 'Libre';
+  if(pos===9)  return 'Turno';
+  if(pos===10) return 'Posturno';
+  if(pos===7)  return 'Maternidad';
+  if(pos===4||pos===12) return 'Consulta';
+  if(pos===8) return 'P8';
+  if(pos===1)  return 'P1';
+  return 'P'+pos;
+}
+
+// ── MOTOR ─────────────────────────────────────────────────────────────────────
+var NAMES=['Leonardo Cendales','Andres Ruiz','Enrique Lopierre','Mauricio Perez','Laura Tobos','Luisa Aguirre','Andres Diaz','JB Silva','Carmen Teresa Mojica','Luis Eduardo Silva','Alexandra Vargas','Maria Jose Cantillo','Juan Manuel Arias','German Gutierrez','Cristian Chamorro','Juan Carlos Tellez','Angela Taborda','Edna Cruz','Luis Fernando Alvarez','Rafael Turriago','Carlos Higuera','Juan Pablo Castaneda','Maria Cecilia Garcia','Jose Luis Pay'];
+var NAME_TO_KEY={'Leonardo Cendales':'Cendales','Andres Ruiz':'Ruiz','Enrique Lopierre':'Lopierre','Mauricio Perez':'Perez','Laura Tobos':'Tobos','Luisa Aguirre':'Aguirre','Andres Diaz':'Diaz','JB Silva':'JB Silva','Carmen Teresa Mojica':'Mojica','Luis Eduardo Silva':'LE Silva','Alexandra Vargas':'Vargas','Maria Jose Cantillo':'Cantillo','Juan Manuel Arias':'Arias','German Gutierrez':'Gutierrez','Cristian Chamorro':'Chamorro','Juan Carlos Tellez':'Tellez','Angela Taborda':'Taborda','Edna Cruz':'Cruz','Luis Fernando Alvarez':'Alvarez','Rafael Turriago':'Turriago','Carlos Higuera':'Higuera','Juan Pablo Castaneda':'Castaneda','Maria Cecilia Garcia':'Garcia','Jose Luis Pay':'Pay'};
+var FIRESTORE_URL='https://firestore.googleapis.com/v1/projects/vacaciones-marly/databases/(default)/documents/vacaciones/datos?key=AIzaSyChxX6E972Rl-vPnKa4rirWtPYUPzhuo4w';
+var allVac=[];
+var PLANTILLA={1:{L:'Cruz',M:'Cruz',X:'Cruz',J:'Cruz',V:'Garcia',N:'Garcia'},2:{L:'Vargas',M:'Vargas',X:'Vargas',J:'Vargas',V:'Vargas',N:'Vargas'},3:{L:'Perez',M:'Tobos',X:'Tobos',J:'Tobos',V:'Tobos',N:'Tobos'},4:{L:'Chamorro',M:'Lopierre',X:'Lopierre',J:'Chamorro',V:'Chamorro',N:'Chamorro'},5:{L:'Taborda',M:'Taborda',X:'Taborda',J:'Taborda',V:'Sanchez',N:'Sanchez'},6:{L:'Arias',M:'Arias',X:'Arias',J:'Arias',V:'Aguirre',N:'Arias'},7:{L:'Garcia',M:'Pay',X:'Pay',J:'Pay',V:'Pay',N:'Pay'},8:{L:'Tellez',M:'Tellez',X:'Diaz',J:'Tellez',V:'Diaz',N:'Diaz'},9:{L:'JB Silva',M:'JB Silva',X:'Garcia',J:'JB Silva',V:'JB Silva',N:'Aguirre'},10:{L:'LE Silva',M:'LE Silva',X:'LE Silva',J:'LE Silva',V:'Higuera',N:'LE Silva'},11:{L:'Turriago',M:'Turriago',X:'Turriago',J:'Turriago',V:'Turriago',N:'Turriago'},12:{L:'Sanchez',M:'Alvarez',X:'Alvarez',J:'Gutierrez',V:'Gutierrez',N:'Gutierrez'},13:{L:'Cantillo',M:'Cantillo',X:'Cantillo',J:'Cantillo',V:'Lopierre',N:'Cantillo'},14:{L:'Mojica',M:'Mojica',X:'Tellez',J:'Mojica',V:'Mojica',N:''},15:{L:'',M:'Perez',X:'',J:'Perez',V:'',N:'Cendales'},16:{L:'Castaneda',M:'Aguirre',X:'Castaneda',J:'Castaneda',V:'Castaneda',N:'Castaneda'}};
+var NO_TURNO=['Cruz','Tellez','JB Silva','Perez','Taborda','Lopierre','Alvarez','Mojica'];
+var SEQ_DUENO={1:'Cruz',2:'Vargas',3:'Perez',4:'Chamorro',5:'Taborda',6:'Arias',7:'Garcia',8:'Tellez',9:'JB Silva',10:'LE Silva',11:'Turriago',12:'Alvarez',13:'Cantillo',14:'Mojica',15:'Perez',16:'Castaneda'};
+var PAGAN_TURNO=['Higuera','Aguirre','Cantillo'];
+var DISP_DIA={L:['Tobos','Pay','Diaz','Lopierre','Gutierrez','Higuera'],M:['Castaneda','Garcia','Chamorro','Diaz','Sanchez'],X:['Chamorro','Garcia','JB Silva','Sanchez','Aguirre'],J:['Garcia','Diaz','Sanchez','Aguirre'],V:['Taborda','LE Silva','Tellez','Cruz','Cantillo','Perez','Turriago']};
+var ROTATE_SEQ=[1,2,3,4,5,6,7,8,9,10,11,12,13,15,16];
+var SEQ_SLOT_DIA33={12:0,13:1,15:2,16:3,1:4,2:5,3:6,4:7,5:8,6:9,7:10,8:11,9:12,10:13,11:14};
+var SEQ_TO_SLOT_BASE={};
+Object.keys(SEQ_SLOT_DIA33).forEach(function(s){SEQ_TO_SLOT_BASE[s]=((SEQ_SLOT_DIA33[s]-33)%15+15)%15;});
+var ANCHOR=new Date(2026,3,1),H_ANC=new Date(2026,3,18),R_ANC=new Date(2026,3,19);
+var FESTIVOS_SET={'2026-01-01':1,'2026-01-12':1,'2026-03-23':1,'2026-04-02':1,'2026-04-03':1,'2026-05-01':1,'2026-05-18':1,'2026-06-08':1,'2026-06-15':1,'2026-06-29':1,'2026-07-20':1,'2026-08-07':1,'2026-08-17':1,'2026-10-12':1,'2026-11-02':1,'2026-11-16':1,'2026-12-08':1,'2026-12-25':1,'2027-01-01':1};
+var MESES=['','Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+var DAYS_ES=['Lunes','Martes','Miercoles','Jueves','Viernes','Sabado','Domingo'];
+var DAY_COL={1:'L',2:'M',3:'X',4:'J',5:'V',6:null,0:null};
+var SAB_ANCLA=new Date(2026,3,4);
+
+function db2(d1,d2){return Math.round((d2-d1)/86400000);}
+function getWT(d){return Math.floor(db2(new Date(2026,0,5),d)/7)%2===0?'A':'B';}
+function getPos(seq,d){if(seq===14)return 14;var sb=SEQ_TO_SLOT_BASE[seq];if(sb===undefined)return null;return ROTATE_SEQ[((sb+db2(ANCHOR,d))%15+15)%15];}
+function getName(seq,col,w){if(!PLANTILLA[seq])return '';if(col==='X'&&seq===9)return w==='A'?'Garcia':'Chamorro';if(col==='V'&&seq===11)return w==='A'?'Turriago':'Perez';return PLANTILLA[seq][col]||'';}
+function vendria(doc,col,w){return ROTATE_SEQ.some(function(s){return getName(s,col,w)===doc;});}
+function ain(arr,item){if(item&&arr.indexOf(item)===-1)arr.push(item);}
+function isVac(doc,ds){return allVac.some(function(v){return v.doc===doc&&ds>=v.desde&&ds<=v.hasta;});}
+function isFest(ds){return !!FESTIVOS_SET[ds];}
+function getDayType(d){var dow=d.getDay(),ds=d.toISOString().slice(0,10);if(dow===6)return'sab';if(dow===0||isFest(ds))return'domfest';return'normal';}
+function esSabVan(d){return db2(SAB_ANCLA,d)%14===0;}
+
+function getTN(d){
+  var w=getWT(d),s9=null,s10=null;
+  ROTATE_SEQ.forEach(function(s){var p=getPos(s,d);if(p===9)s9=s;if(p===10)s10=s;});
+  var tb=s9?getName(s9,'N',w):'';
+  var ht=db2(H_ANC,d)%17===0,rt=db2(R_ANC,d)%17===0;
+  var tf=tb;if(ht)tf='Higuera';else if(rt)tf='Ruiz';
+  var ay=new Date(d);ay.setDate(ay.getDate()-1);
+  var ha=db2(H_ANC,ay)%17===0,ra=db2(R_ANC,ay)%17===0;
+  var pr=ha?'Higuera':(ra?'Ruiz':null);
+  var ps=s10?getName(s10,'N',w):'';
+  return{tf:tf,pd:pr||ps,s9:s9,s10:s10};
+}
+
+function getAutoResult(doc,d){
+  var dow=d.getDay(),ds=d.toISOString().slice(0,10);
+  var dayType=getDayType(d);
+  if(isVac(doc,ds))return{pos:null,horas:0,tipo:'vac',dayType:dayType};
+
+  var tn=getTN(d);
+  // Turno noche
+  if(tn.tf===doc)return{pos:9,horas:12,tipo:'plantilla',dayType:dayType};
+  // Posturno
+  if(tn.pd===doc)return{pos:10,horas:0,tipo:'plantilla',dayType:dayType};
+
+  // Fin de semana / festivo sin turno
+  if(dayType==='sab'){
+    if(esSabVan(d))return{pos:null,horas:6,tipo:'sab-van',dayType:dayType};
+    return{pos:null,horas:0,tipo:'fds-off',dayType:dayType};
+  }
+  if(dayType==='domfest'){
+    return{pos:null,horas:0,tipo:'fds-off',dayType:dayType};
+  }
+
+  // Semana normal
+  var col=DAY_COL[dow],w=getWT(d);
+  var pm={};for(var i=1;i<=16;i++)pm[i]='';
+  ROTATE_SEQ.forEach(function(s){
+    var p=getPos(s,d),nd=getName(s,col,w);
+    if(p===9)pm[9]=tn.tf;else if(p===10)pm[10]=tn.pd;
+    else{if(nd===tn.tf||nd===tn.pd)pm[p]='';else pm[p]=nd;}
+  });
+  pm[14]=PLANTILLA[14][col]||'';
+  for(var pp=1;pp<=16;pp++){if(pp!==9&&pm[pp]&&isVac(pm[pp],ds))pm[pp]='';}
+
+  // En plantilla rotativa
+  for(var pi=1;pi<=16;pi++){
+    if(pm[pi]===doc)return{pos:pi,horas:HORAS_SEMANA[pi],tipo:'plantilla',dayType:dayType};
+  }
+
+  // Disp: 1) turno robado  2) disponible por secuencia
+  // 1) Turno robado: Higuera o Ruiz ocupan pos9, el desplazado va igual
+  var ht2=db2(H_ANC,d)%17===0,rt2=db2(R_ANC,d)%17===0;
+  if(ht2||rt2){
+    var tb2=tn.s9?getName(tn.s9,'N',w):'';
+    if(tb2===doc&&vendria(doc,col,w)&&!isVac(doc,ds))
+      return{pos:null,horas:0,tipo:'disp',dayType:dayType};
+  }
+  // 2) Secuencia: doc es el nombre que aparece en la columna del dia
+  //    para la secuencia que ocupa pos9 o pos10, pero sin posicion asignada
+  var occ2={};Object.keys(pm).forEach(function(k){if(pm[k])occ2[pm[k]]=true;});
+  occ2[tn.tf]=true;if(tn.pd)occ2[tn.pd]=true;
+  var n9x=tn.s9?getName(tn.s9,col,w):'';
+  var n10x=tn.s10?getName(tn.s10,col,w):'';
+  if((n9x===doc||n10x===doc)&&!occ2[doc]&&!isVac(doc,ds))
+    return{pos:null,horas:0,tipo:'disp',dayType:dayType};
+
+  return{pos:null,horas:0,tipo:'libre',dayType:dayType};
+}
+
+// ── STORAGE ───────────────────────────────────────────────────────────────────
+var memStore={};
+function sk(who){return 'e-'+who+'-'+curYear+'-'+String(curMonth).padStart(2,'0');}
+function bk(who){return 'b-'+who+'-'+curYear+'-'+String(curMonth).padStart(2,'0');}
+function getEdits(who){return memStore[sk(who)]||{};}
+function saveEdit(who,day,data){var k=sk(who);if(!memStore[k])memStore[k]={};memStore[k][day]=data;try{localStorage.setItem('marly-'+k,JSON.stringify(memStore[k]));}catch(e){}}
+function removeEdit(who,day){var k=sk(who);if(!memStore[k])memStore[k]={};delete memStore[k][day];try{localStorage.setItem('marly-'+k,JSON.stringify(memStore[k]));}catch(e){}}
+function loadEdits(who){try{var v=localStorage.getItem('marly-'+sk(who));if(v)memStore[sk(who)]=JSON.parse(v);}catch(e){}}
+
+var ANEST_NAMES=['Cendales','Ruiz','Lopierre','Perez','Tobos','Aguirre','Diaz','JB Silva','Mojica','LE Silva','Vargas','Cantillo','Arias','Gutierrez','Chamorro','Tellez','Taborda','Cruz','Alvarez','Turriago','Higuera','Castaneda','Garcia','Pay'];
+var SALARIO_BASE=2058698;
+var PMA_CASO=525000;
+function pk(who){return 'p-'+who+'-'+curYear+'-'+String(curMonth).padStart(2,'0');}
+function getBilling(who){return memStore[bk(who)]||0;}
+function saveBilling(who,val){memStore[bk(who)]=val;try{localStorage.setItem('marly-'+bk(who),String(val));}catch(e){}}
+function loadBilling(who){try{var v=localStorage.getItem('marly-'+bk(who));if(v)memStore[bk(who)]=parseFloat(v)||0;}catch(e){}}
+function getPMA(who){return memStore[pk(who)]||0;}
+function savePMA(who,val){memStore[pk(who)]=val;try{localStorage.setItem('marly-'+pk(who),String(val));}catch(e){}}
+function loadPMA(who){try{var v=localStorage.getItem('marly-'+pk(who));if(v)memStore[pk(who)]=parseInt(v)||0;}catch(e){}}
+function formatCOP(n){if(!n||isNaN(n))return '—';return '$\u00a0'+Math.round(n).toLocaleString('es-CO');}
+function parseCOP(str){return parseFloat(str.replace(/[^0-9.]/g,''))||0;}
+
+// ── MES ───────────────────────────────────────────────────────────────────────
+var now=new Date();
+var curYear=now.getFullYear();
+var curMonth=now.getMonth()+1;
+// clamp to 2026-2027 range
+if(curYear<2026){curYear=2026;curMonth=1;}
+if(curYear>2027){curYear=2027;curMonth=12;}
+
+function cambiarMes(d){
+  curMonth+=d;if(curMonth>12){curMonth=1;curYear++;}if(curMonth<1){curMonth=12;curYear--;}
+  if(curYear<2026){curYear=2026;curMonth=1;}if(curYear>2027){curYear=2027;curMonth=12;}
+  loadEdits('cas');loadEdits('gar');loadBilling('cas');loadBilling('gar');loadPMA('cas');loadPMA('gar');
+renderAll();
+}
+function calcBilling(who){
+  if(who&&who.dataset)who=who.dataset.who;
+  saveBilling(who,parseCOP(document.getElementById('bill-'+who).value));
+  var pmaEl=document.getElementById('pma-'+who);
+  var pmaVal=parseInt(pmaEl?pmaEl.value:0)||0;
+  savePMA(who,pmaVal);
+  updateVHr(who);
+}
+function updateVHr(who){
+  var hrsEl=document.getElementById('hrs-'+who);
+  var hrs=hrsEl?parseFloat(hrsEl.textContent)||0:0;
+  var salas=getBilling(who);
+  var pma=getPMA(who)*PMA_CASO;
+  var total=SALARIO_BASE+salas+pma;
+  var telEl=document.getElementById('total-'+who);
+  var desEl=document.getElementById('desglose-'+who);
+  var vhrEl=document.getElementById('vhr-'+who);
+  if(telEl)telEl.textContent=formatCOP(total);
+  if(desEl)desEl.textContent='Base '+formatCOP(SALARIO_BASE)+' + Salas '+formatCOP(salas)+' + PMA '+formatCOP(pma);
+  if(vhrEl)vhrEl.textContent=(total>0&&hrs>0)?formatCOP(total/hrs)+' / h':'—';
+}
+function initBillingVisibility(){
+  ['cas','gar'].forEach(function(who){
+    var wrap=document.getElementById('billing-wrap-'+who);
+    if(wrap&&!billingVisible[who])wrap.classList.add('billing-hidden');
+  });
+}
+
+function loadBillingInputs(){
+  ['cas','gar'].forEach(function(who){
+    var salas=getBilling(who);
+    document.getElementById('bill-'+who).value=salas>0?salas.toLocaleString('es-CO'):'';
+    var pmaEl=document.getElementById('pma-'+who);
+    if(pmaEl){var p=getPMA(who);pmaEl.value=p>0?p:''}
+    updateVHr(who);
+  });
+}
+
+function renderAll(){
+  document.getElementById('mn-label').textContent=MESES[curMonth]+' '+curYear;
+  renderPanel('Castaneda','cas');renderPanel('Garcia','gar');loadBillingInputs();
+}
+
+function renderPanel(doc,who){
+  var dim=new Date(curYear,curMonth,0).getDate();
+  var firstDow=new Date(curYear,curMonth-1,1).getDay();
+  var startOffset=firstDow===0?6:firstDow-1;
+  var todayStr=new Date().toISOString().slice(0,10);
+  var edits=getEdits(who);
+  var totalHrs=0,totalJornadas=0,diasLibre=0;
+  var cells='';
+  for(var b=0;b<startOffset;b++)cells+='<div class="dc empty"></div>';
+
+  for(var day=1;day<=dim;day++){
+    var d=new Date(curYear,curMonth-1,day),ds=d.toISOString().slice(0,10),dow=d.getDay();
+    var auto=getAutoResult(doc,d),edit=edits[day]||null;
+    var dayType=auto.dayType,isEdited=!!edit;
+    var esFest=isFest(ds);
+
+    var ePos,eHrs;
+    if(isEdited){
+      ePos=edit.pos;
+      eHrs=edit.horas!==null&&edit.horas!==undefined?parseFloat(edit.horas):horasByPos(ePos,dayType);
+    } else {
+      ePos=auto.pos||0;
+      eHrs=auto.horas||0;
+    }
+    // Horas turno dia (si aplica)
+    var dturnoHrs=(edit&&edit.dturnoPos&&!edit.tcuad)?horasByPos(edit.dturnoPos,dayType):0;
+    if(edit&&edit.dturnoHrs!==undefined&&edit.dturnoHrs!==null)dturnoHrs=parseFloat(edit.dturnoHrs)||0;
+    var hrsParaConteo=(edit&&edit.tcuad)?0:(eHrs+dturnoHrs);
+    totalHrs+=hrsParaConteo;
+    totalJornadas+=calcJornadas(hrsParaConteo);
+
+    // días libres: cualquier día sin horas efectivas (excl. vacaciones y turnos cuadrados)
+    var esFds2=dow===0||dow===6;
+    var esLibreTotal=hrsParaConteo===0&&auto.tipo!=='vac';
+    if(esLibreTotal)diasLibre++;
+
+    // clase color
+    var colorCls;
+    if(isEdited){
+      if(ePos===0&&dayType!=='normal'){
+        // editado a libre en fds/fest/sab
+        colorCls='fds-off';
+      } else if(ePos===0){
+        colorCls='tipo-libre';
+      } else {
+        colorCls=tipoClase(ePos,'plantilla',dayType);
+      }
+    } else {
+      colorCls=tipoClase(auto.pos,auto.tipo,dayType);
+    }
+
+    var hasDturno=!!(edit&&edit.dturnoPos&&(auto.pos===9||ePos===9));
+    var dturnoColor='rgba(74,222,128,0.5)'; // default verde
+    if(edit&&edit.dturnoPos){
+      var dp=edit.dturnoPos;
+      if(dp===1)dturnoColor='rgba(192,132,252,0.6)';
+      else if(dp===7)dturnoColor='rgba(251,146,60,0.6)';
+      else if(dp===4||dp===12)dturnoColor='rgba(56,189,248,0.55)';
+      else dturnoColor='rgba(74,222,128,0.5)';
+    }
+
+    var cls='dc '+colorCls;
+    if(hasDturno)cls+=' turno-doble';
+    if(esFest)cls+=' festivo';
+    if(ds===todayStr)cls+=' today';
+    if(isEdited)cls+=' edited';
+    if(edit&&edit.tcuad)cls+=' tcuad';
+    else if(edit&&(edit.favor||edit.favorSvc))cls+=' favor';
+
+    var tag;
+    if(isEdited){
+      tag=(ePos===0)?'Libre':tipoTag(ePos,'plantilla');
+    } else {
+      tag=tipoTag(auto.pos,auto.tipo);
+    }
+
+    var festPip=esFest?'<span class="fest-pip"></span>':'';
+    var noteHtml='';
+    if(edit&&edit.tcuad)noteHtml+='<div class="dc-note note-tcuad">TC: '+edit.tcuad+'</div>';
+    if(edit&&(edit.favor||edit.favorSvc))noteHtml+='<div class="dc-note note-favor">Fav: '+(edit.favorSvc?'Servicio':edit.favor)+'</div>';
+    var styleAttr=hasDturno?' style="--dt-color:'+dturnoColor+'"':'';
+    cells+='<div class="'+cls+'"'+styleAttr+' onclick="openModal('+day+',\''+who+'\')">'
+      +(hasDturno?
+        '<div class="dc-num"><span>'+day+'</span>'+festPip+'</div>'
+        +'<div class="dc-half top"><span class="dc-tag-top" style="color:'+
+        (edit.dturnoPos===1?'var(--c-p1)':edit.dturnoPos===7?'var(--c-mat)':(edit.dturnoPos===4||edit.dturnoPos===12)?'var(--c-consulta)':'var(--c-normal)')+
+        '">'+tipoTag(edit.dturnoPos,'plantilla')+'</span></div>'
+        +'<div class="dc-half bot"><span class="dc-tag-bot">Turno</span>'+noteHtml+'</div>'
+        :'<div class="dc-num"><span>'+day+'</span>'+festPip+'</div>'
+        +'<div class="dc-body">'+(tag?'<div class="dc-tag">'+tag+'</div>':'')+noteHtml+'</div>')
+      +'</div>';
+  }
+
+  document.getElementById('grid-'+who).innerHTML=cells;
+  document.getElementById('hrs-'+who).textContent=totalHrs;
+  document.getElementById('stats-'+who).innerHTML=
+    '<div class="stat-item"><div class="sv">'+totalHrs+'</div><div class="sl">Horas</div></div>'
+    +'<div class="stat-item"><div class="sv">'+totalJornadas+'</div><div class="sl">Jornadas</div></div>'
+    +'<div class="stat-item"><div class="sv">'+diasLibre+'</div><div class="sl">Dias libres</div></div>';
+  updateVHr(who);
+}
+
+// ── MODAL ─────────────────────────────────────────────────────────────────────
+var _mWho=null,_mDay=null,_mDT=null;
+function openModal(day,who){
+  _mWho=who;_mDay=day;
+  var d=new Date(curYear,curMonth-1,day),ds=d.toISOString().slice(0,10),dow=d.getDay();
+  var dowName=DAYS_ES[dow===0?6:dow-1],fest=isFest(ds);
+  var doc=who==='cas'?'Castaneda':'Garcia';
+  var auto=getAutoResult(doc,d),edits=getEdits(who),edit=edits[day]||null;
+  _mDT=auto.dayType;
+  var curPos=edit?edit.pos:(auto.pos||0);
+  var curHrs=edit?(edit.horas!==null&&edit.horas!==undefined?edit.horas:''):(auto.horas||0);
+
+  var posKeys,posLabels;
+  if(_mDT==='sab'){posKeys=KEYS_SAB;posLabels=POS_SAB;}
+  else if(_mDT==='domfest'){posKeys=KEYS_DOMFEST;posLabels=POS_DOMFEST;}
+  else{posKeys=KEYS_SEMANA;posLabels=POS_SEMANA;}
+
+  function autoDesc(a){
+    if(a.tipo==='vac')return 'Vacaciones';
+    if(a.tipo==='disp')return 'Disponible (va a la clinica)';
+    if(a.tipo==='sab-van')return 'Sabado que van — sin posicion asignada aun';
+    if(a.tipo==='fds-off')return 'Fin de semana / festivo — sin asignacion';
+    if(a.tipo==='libre')return 'Dia libre';
+    if(a.pos===9)return 'Turno noche (P9) — 12h';
+    if(a.pos===10)return 'Posturno (P10) — 0h';
+    if(a.pos)return 'Plantilla P'+a.pos+' — '+HORAS_SEMANA[a.pos]+'h';
+    return 'Libre';
+  }
+
+  var hint='';
+  if(_mDT==='sab')hint='<div class="mhint">Posiciones de sabado</div>';
+  if(_mDT==='domfest')hint='<div class="mhint">Solo P1 (disp. dia) o P7 (maternidad)</div>';
+
+  var opts='';
+  posKeys.forEach(function(p){opts+='<option value="'+p+'"'+(curPos===p?' selected':'')+'>'+posLabels[p]+'</option>';});
+
+  // Cargar estado guardado de tcuad y favor
+  var savedTcuad=edit?edit.tcuad||'':'';
+  var savedFavor=edit?edit.favor||'':'';
+  var savedFavorSvc=edit?!!edit.favorSvc:false;
+
+  // Select anestesiólogos
+  function buildAnestSelect(id,val,showSvc){
+    var s='<select id="'+id+'" class="wide" style="width:100%;font-family:var(--ff-m);font-size:0.75rem;background:var(--b7);border:1px solid var(--b5);border-radius:7px;color:var(--wh);padding:0.38rem 0.6rem;outline:none;cursor:pointer;">';
+    s+='<option value="">— Ninguno</option>';
+    ANEST_NAMES.forEach(function(n){s+='<option value="'+n+'"'+(val===n?' selected':'')+'>'+n+'</option>';});
+    if(showSvc!==false)s+='<option value="__svc__"'+(val==='__svc__'?' selected':'')+'>Servicio</option>';
+    s+='</select>';
+    return s;
+  }
+  function buildAnestSelectTcuad(id,val){
+    var s='<select id="'+id+'" class="wide" style="width:100%;font-family:var(--ff-m);font-size:0.75rem;background:var(--b7);border:1px solid var(--b5);border-radius:7px;color:var(--wh);padding:0.38rem 0.6rem;outline:none;cursor:pointer;">';
+    s+='<option value="">— Ninguno</option>';
+    ANEST_NAMES.forEach(function(n){s+='<option value="'+n+'"'+(val===n?' selected':'')+'>'+n+'</option>';});
+    s+='</select>';
+    return s;
+  }
+
+  // Check if this day is turno (auto or edited to pos 9)
+  var isEdited=!!edit;
+  var isTurnoDay=(auto.pos===9||curPos===9);
+  var savedDturnoPos=edit?edit.dturnoPos||0:0;
+  var savedDturnoHrs=edit&&edit.dturnoHrs!==undefined?edit.dturnoHrs:'';
+
+  // Build turno dia position select (same as semana minus pos 9,10)
+  var dturnoKeys=[0,1,2,3,4,5,6,7,8,11,12,13,14,15,16];
+  var dturnoOpts='<option value="0">— No (solo turno noche)</option>';
+  dturnoKeys.forEach(function(p){
+    if(p===0)return;
+    dturnoOpts+='<option value="'+p+'"'+(savedDturnoPos===p?' selected':'')+'>'+POS_SEMANA[p]+'</option>';
+  });
+  // Also add servicio option
+  dturnoOpts+='<option value="99"'+(savedDturnoPos===99?' selected':'')+'>Servicio</option>';
+
+  var turnoSeccion=isTurnoDay?
+    '<div class="msec"><div class="mst" style="color:var(--c-turno)">Turno dia (adicional)</div>'
+    +'<div class="mfield"><label>Por / a favor de</label>'+buildAnestSelect('m-dturno-quien',edit?edit.dturnoQuien||'':'',false)+'</div>'
+    +'<div class="mfield"><label>Posicion diurna</label>'
+    +'<select id="m-dturno-pos" onchange="onDturnoChange()">'
+    +dturnoOpts
+    +'</select></div>'
+    +'<div class="mfield"><label>Horas diurnas</label>'
+    +'<input type="number" id="m-dturno-hrs" min="0" max="16" step="0.5" value="'+savedDturnoHrs+'" placeholder="0" /></div>'
+    +'</div>':
+    '';
+
+  document.getElementById('mbox').innerHTML=
+    '<div class="mtop"><div>'
+    +'<div class="mdate">'+day+' de '+MESES[curMonth]+(fest?'<span class="mfest-badge">Festivo</span>':'')+'</div>'
+    +'<div class="mdow">'+dowName+'</div></div>'
+    +'<button class="mclose" onclick="closeModal()">&#215;</button></div>'
+    +'<div class="msec"><div class="mst">Estado automatico</div>'
+    +'<span class="minfo-chip '+who+'">'+doc+'</span>'
+    +'<div class="minfo-text">'+autoDesc(auto)+'</div></div>'
+    +'<div class="msec"><div class="mst">Editar</div>'
+    +hint
+    +'<div class="mfield"><label>Posicion</label><select id="m-pos" onchange="onPosChange()">'+opts+'</select></div>'
+    +'<div class="mfield"><label>Horas efectivas</label><input type="number" id="m-hrs" min="0" max="24" step="0.5" value="'+curHrs+'" placeholder="0" /></div>'
+    +'<div class="mfield"><label>Turno cuadrado con</label>'+buildAnestSelectTcuad('m-tcuad',savedTcuad)+'</div>'
+    +'<div class="mfield"><label>Favor a</label>'+buildAnestSelect('m-favor',savedFavorSvc?'__svc__':savedFavor)+'</div>'
+    +'</div>'
+    +turnoSeccion
+    +'<div class="mbtn-row"><button class="mbtn save" onclick="saveModal()">Guardar</button>'
+    +'<button class="mbtn reset" onclick="resetModal()">Restablecer auto</button></div>';
+  document.getElementById('mo').classList.add('open');
+}
+function onDturnoChange(){
+  var p=parseInt(document.getElementById('m-dturno-pos').value);
+  var hrsEl=document.getElementById('m-dturno-hrs');
+  if(p===0){hrsEl.value='';}
+  else if(p===99){hrsEl.value='';}  // servicio - manual
+  else if(HORAS_SEMANA[p]!==undefined){hrsEl.value=HORAS_SEMANA[p];}
+}
+function onPosChange(){
+  var p=parseInt(document.getElementById('m-pos').value);
+  var hm=_mDT==='sab'?HORAS_SAB:_mDT==='domfest'?HORAS_DOMFEST:HORAS_SEMANA;
+  document.getElementById('m-hrs').value=hm[p]!==undefined?hm[p]:0;
+}
+function saveModal(){
+  var pos=parseInt(document.getElementById('m-pos').value);
+  var hrs=parseFloat(document.getElementById('m-hrs').value)||0;
+  var tcuadEl=document.getElementById('m-tcuad');
+  var favorEl=document.getElementById('m-favor');
+  var tcuad=tcuadEl?tcuadEl.value:'';
+  var favorRaw=favorEl?favorEl.value:'';
+  var favorSvc=favorRaw==='__svc__';
+  var favor=favorSvc?'':favorRaw;
+  // turno doble
+  var dturnoPos=0,dturnoHrs=0,dturnoQuien='';
+  var dtPosEl=document.getElementById('m-dturno-pos');
+  var dtHrsEl=document.getElementById('m-dturno-hrs');
+  var dtQuienEl=document.getElementById('m-dturno-quien');
+  if(dtPosEl)dturnoPos=parseInt(dtPosEl.value)||0;
+  if(dtHrsEl)dturnoHrs=parseFloat(dtHrsEl.value)||0;
+  if(dtQuienEl)dturnoQuien=dtQuienEl.value||'';
+  saveEdit(_mWho,_mDay,{pos:pos,horas:hrs,tcuad:tcuad,favor:favor,favorSvc:favorSvc,dturnoPos:dturnoPos,dturnoHrs:dturnoHrs,dturnoQuien:dturnoQuien});
+  document.getElementById('mo').classList.remove('open');
+  renderPanel(_mWho==='cas'?'Castaneda':'Garcia',_mWho);
+}
+function resetModal(){
+  removeEdit(_mWho,_mDay);
+  document.getElementById('mo').classList.remove('open');
+  renderPanel(_mWho==='cas'?'Castaneda':'Garcia',_mWho);
+}
+function closeModal(e){if(!e||e.target===document.getElementById('mo'))document.getElementById('mo').classList.remove('open');}
+document.addEventListener('keydown',function(e){if(e.key==='Escape')closeModal();});
+
+// ── ICS ───────────────────────────────────────────────────────────────────────
+function pad2(n){return String(n).padStart(2,'0');}
+function icsDate(y,m,d){return y+''+pad2(m)+''+pad2(d);}
+function exportarICS(who){
+  var doc=who==='cas'?'Castaneda':'Garcia';
+  var dim=new Date(curYear,curMonth,0).getDate();
+  var edits=getEdits(who);
+  var lines=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Marly//ES','CALSCALE:GREGORIAN','METHOD:PUBLISH','X-WR-CALNAME:Turnos '+doc+' '+MESES[curMonth]+' '+curYear,'X-WR-TIMEZONE:America/Bogota'];
+  var count=0;
+  for(var day=1;day<=dim;day++){
+    var d=new Date(curYear,curMonth-1,day);
+    var auto=getAutoResult(doc,d),edit=edits[day]||null;
+    var dayType=auto.dayType;
+    var ePos=edit?edit.pos:(auto.pos||0);
+    var hm=dayType==='sab'?HORAS_SAB:dayType==='domfest'?HORAS_DOMFEST:HORAS_SEMANA;
+    var eHrs=edit?(edit.horas!==null?parseFloat(edit.horas):hm[ePos]||0):(auto.horas||0);
+    if(eHrs===0&&auto.tipo!=='vac')continue;
+    var pl=dayType==='sab'?(POS_SAB[ePos]||'Sabado'):dayType==='domfest'?(POS_DOMFEST[ePos]||'Festivo'):(POS_SEMANA[ePos]||'Trabajo');
+    var title=doc+' — '+(auto.tipo==='vac'?'Vacaciones':pl.replace(/\(.*\)/,'').trim())+(eHrs>0?' ('+eHrs+'h)':'');
+    var nd=new Date(curYear,curMonth-1,day+1);
+    lines.push('BEGIN:VEVENT','UID:marly-'+who+'-'+curYear+pad2(curMonth)+pad2(day),'DTSTART;VALUE=DATE:'+icsDate(curYear,curMonth,day),'DTEND;VALUE=DATE:'+icsDate(nd.getFullYear(),nd.getMonth()+1,nd.getDate()),'SUMMARY:'+title,'DESCRIPTION:Horas: '+eHrs+'h | Jornadas: '+calcJornadas(eHrs),'END:VEVENT');
+    count++;
+  }
+  lines.push('END:VCALENDAR');
+  if(!count){alert('No hay dias con trabajo para exportar.');return;}
+  var blob=new Blob([lines.join('\r\n')],{type:'text/calendar;charset=utf-8'});
+  var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='Turnos_'+doc+'_'+MESES[curMonth]+'_'+curYear+'.ics';document.body.appendChild(a);a.click();setTimeout(function(){document.body.removeChild(a);},1000);
+}
+
+
+// ── DATOS HISTORICOS 2025 ────────────────────────────────────────────────────
+var HIST = {
+  cas: {
+    2025: {
+      1:{total:48839838,hrs:195,salas:47238055},
+      2:{total:57941829,hrs:200,salas:56340046},
+      3:{total:41140039,hrs:189,salas:39538256},
+      4:{total:50909779,hrs:210,salas:48977779},
+      5:{total:47683153,hrs:199,salas:45581370},
+      6:{total:16212538,hrs:67,salas:14085755},
+      7:{total:56542677,hrs:231,salas:54415894},
+      8:{total:56941039,hrs:200,salas:54814256},
+      9:{total:60447510,hrs:213,salas:58845727},
+      10:{total:46198230,hrs:196,salas:44596447},
+      11:{total:61719970,hrs:219,salas:60118187},
+      12:{total:45802968,hrs:166,salas:43701185}
+    }
+  },
+  gar: {
+    2025: {
+      1:{total:19818627,hrs:108,salas:18118627},
+      2:{total:25812015,hrs:115,salas:24112015},
+      3:{total:21022584,hrs:98,salas:19322584},
+      4:{total:27838064,hrs:117,salas:26014256},
+      5:{total:21626774,hrs:110,salas:19926774},
+      6:{total:9286000,hrs:39,salas:7586000},
+      7:{total:35758650,hrs:136,salas:34058650},
+      8:{total:27678764,hrs:125,salas:25978764},
+      9:{total:42808492,hrs:159,salas:41108492},
+      10:{total:1700000,hrs:88,salas:0},
+      11:{total:29654501,hrs:118,salas:27954501},
+      12:{total:19570447,hrs:97,salas:17870447}
+    }
+  }
+};
+
+function getHist(who,year,month){
+  try{return HIST[who][year][month]||{total:0,hrs:0,salas:0};}catch(e){return{total:0,hrs:0,salas:0};}
+}
+
+// ── RESUMEN ANUAL ─────────────────────────────────────────────────────────────
+var anualYear=new Date().getFullYear();
+if(anualYear<2025)anualYear=2025;
+if(anualYear>2027)anualYear=2027;
+
+var MESES_SHORT=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+
+function cambiarAnio(d){
+  anualYear+=d;
+  if(anualYear<2025)anualYear=2025;
+  if(anualYear>2027)anualYear=2027;
+  renderAnual();
+}
+
+function getMonthData(who,year,month){
+  var mk=String(month).padStart(2,'0');
+  // billing
+  var billKey='marly-b-'+who+'-'+year+'-'+mk;
+  var pmaKey='marly-p-'+who+'-'+year+'-'+mk;
+  var editsKey='marly-e-'+who+'-'+year+'-'+mk;
+  var salas=0,pma=0,hrs=0;
+  try{var v=localStorage.getItem(billKey);if(v)salas=parseFloat(v)||0;}catch(e){}
+  try{var v2=localStorage.getItem(pmaKey);if(v2)pma=parseInt(v2)||0;}catch(e){}
+  // horas: need to recalculate from edits + auto
+  try{
+    var ev=localStorage.getItem(editsKey);
+    var edits=ev?JSON.parse(ev):{};
+    var doc=who==='cas'?'Castaneda':'Garcia';
+    var dim=new Date(year,month,0).getDate();
+    for(var day=1;day<=dim;day++){
+      var d=new Date(year,month-1,day);
+      var edit=edits[day]||null;
+      var auto=getAutoResult(doc,d);
+      var dayType=auto.dayType;
+      var ePos=edit?edit.pos:(auto.pos||0);
+      var hm=dayType==='sab'?HORAS_SAB:dayType==='domfest'?HORAS_DOMFEST:HORAS_SEMANA;
+      var eHrs=edit?(edit.horas!==null&&edit.horas!==undefined?parseFloat(edit.horas):hm[ePos]||0):(auto.horas||0);
+      if(edit&&edit.tcuad)eHrs=0;
+      hrs+=eHrs;
+    }
+  }catch(e){}
+  var total=SALARIO_BASE+salas+(pma*PMA_CASO);
+  var vhr=hrs>0?total/hrs:0;
+  return{salas:salas,pma:pma,hrs:hrs,total:total,vhr:vhr};
+}
+
+function deltaStr(cur,prev){
+  if(!prev||!cur)return '';
+  var pct=((cur-prev)/prev)*100;
+  var sign=pct>=0?'+':'';
+  var cls=pct>2?'up':pct<-2?'down':'flat';
+  var arrow=pct>2?'▲':pct<-2?'▼':'—';
+  return '<span class="trim-delta '+cls+'">'+arrow+' '+sign+pct.toFixed(1)+'%</span>';
+}
+function deltaCell(cur,prev){
+  if(!prev||!cur)return '<td>—</td>';
+  var pct=((cur-prev)/prev)*100;
+  var sign=pct>=0?'+':'';
+  var col=pct>2?'color:var(--green-ui)':pct<-2?'color:var(--c-turno)':'color:var(--b3)';
+  return '<td style="'+col+';font-size:0.65rem;font-weight:700;">'+(pct>2?'▲':pct<-2?'▼':'—')+' '+sign+pct.toFixed(1)+'%</td>';
+}
+
+function renderAnual(){
+  var prevYear=anualYear-1;
+  document.getElementById('ay-label').textContent=anualYear;
+  document.getElementById('anual-year-label').textContent='Ano '+anualYear+' vs '+prevYear+' · Clinica de Marly';
+  document.getElementById('trim-title').textContent='Comparacion trimestral '+anualYear+' vs '+prevYear;
+
+  var nowM=new Date().getMonth()+1;
+  var nowY=new Date().getFullYear();
+
+  var totalCas=0,totalGar=0,totalHrsCas=0,totalHrsGar=0;
+  var prevTotalCas=0,prevTotalGar=0;
+  var rows='',barsCas=[],barsGar=[],barsPCas=[],barsPGar=[],maxTotal=0;
+  var trimCas=[0,0,0,0],trimGar=[0,0,0,0];
+  var trimPCas=[0,0,0,0],trimPGar=[0,0,0,0];
+
+  for(var m=1;m<=12;m++){
+    var cas=getMonthData('cas',anualYear,m);
+    var gar=getMonthData('gar',anualYear,m);
+    var pcas=getHist('cas',prevYear,m);
+    var pgar=getHist('gar',prevYear,m);
+    var qi=Math.floor((m-1)/3);
+    totalCas+=cas.total; totalGar+=gar.total;
+    totalHrsCas+=cas.hrs; totalHrsGar+=gar.hrs;
+    prevTotalCas+=pcas.total; prevTotalGar+=pgar.total;
+    trimCas[qi]+=cas.total; trimGar[qi]+=gar.total;
+    trimPCas[qi]+=pcas.total; trimPGar[qi]+=pgar.total;
+    barsCas.push(cas.total); barsGar.push(gar.total);
+    barsPCas.push(pcas.total); barsPGar.push(pgar.total);
+    var mx=Math.max(cas.total,gar.total,pcas.total,pgar.total);
+    if(mx>maxTotal)maxTotal=mx;
+
+    var isCur=(m===nowM&&anualYear===nowY);
+    var hasCur=cas.total>SALARIO_BASE;
+    var hasPCas=pcas.total>0;
+    var hasPGar=pgar.total>0;
+    rows+='<tr'+(isCur?' class="current-month"':'')+'>'
+      +'<td>'+MESES[m]+'</td>'
+      +'<td class="cas-val">'+(cas.hrs>0?cas.hrs+'h':'—')+'</td>'
+      +'<td class="cas-val">'+(hasCur?formatCOP(cas.total):'—')+'</td>'
+      +'<td class="prev-val">'+(hasPCas?formatCOP(pcas.total):'—')+'</td>'
+      +deltaCell(hasCur?cas.total:null,hasPCas?pcas.total:null)
+      +'<td class="gar-val">'+(gar.hrs>0?gar.hrs+'h':'—')+'</td>'
+      +'<td class="gar-val">'+(gar.total>SALARIO_BASE?formatCOP(gar.total):'—')+'</td>'
+      +'<td class="prev-val">'+(hasPGar?formatCOP(pgar.total):'—')+'</td>'
+      +deltaCell(gar.total>SALARIO_BASE?gar.total:null,hasPGar?pgar.total:null)
+      +'</tr>';
+  }
+
+  // Fila totales
+  var vCas=totalHrsCas>0?totalCas/totalHrsCas:0;
+  var vGar=totalHrsGar>0?totalGar/totalHrsGar:0;
+  rows+='<tr class="separator">'
+    +'<td style="font-family:var(--ff-b);color:var(--wh);font-weight:700;">Total '+anualYear+'</td>'
+    +'<td class="cas-val" style="font-weight:700;">'+(totalHrsCas>0?totalHrsCas+'h':'—')+'</td>'
+    +'<td class="cas-val" style="font-weight:700;">'+(totalCas>SALARIO_BASE*12?formatCOP(totalCas):'—')+'</td>'
+    +'<td class="prev-val">'+(prevTotalCas>0?formatCOP(prevTotalCas):'—')+'</td>'
+    +deltaCell(totalCas>SALARIO_BASE*12?totalCas:null,prevTotalCas||null)
+    +'<td class="gar-val" style="font-weight:700;">'+(totalHrsGar>0?totalHrsGar+'h':'—')+'</td>'
+    +'<td class="gar-val" style="font-weight:700;">'+(totalGar>SALARIO_BASE*12?formatCOP(totalGar):'—')+'</td>'
+    +'<td class="prev-val">'+(prevTotalGar>0?formatCOP(prevTotalGar):'—')+'</td>'
+    +deltaCell(totalGar>SALARIO_BASE*12?totalGar:null,prevTotalGar||null)
+    +'</tr>';
+  document.getElementById('anual-tbody').innerHTML=rows;
+
+  // Totales cards
+  var juntos=totalCas+totalGar;
+  var prevJuntos=prevTotalCas+prevTotalGar;
+  document.getElementById('anual-totals').innerHTML=
+    '<div class="at-card"><div class="at-label">Castaneda '+anualYear+'</div>'
+    +'<div class="at-val cas">'+formatCOP(totalCas)+'</div>'
+    +'<div class="at-sub">'+totalHrsCas+'h &middot; '+formatCOP(vCas)+'/h</div>'
+    +(prevTotalCas?deltaStr(totalCas,prevTotalCas)+'<span style="font-size:0.55rem;color:var(--b3)"> vs '+prevYear+'</span>':'')+'</div>'
+    +'<div class="at-card"><div class="at-label">Garcia '+anualYear+'</div>'
+    +'<div class="at-val gar">'+formatCOP(totalGar)+'</div>'
+    +'<div class="at-sub">'+totalHrsGar+'h &middot; '+formatCOP(vGar)+'/h</div>'
+    +(prevTotalGar?deltaStr(totalGar,prevTotalGar)+'<span style="font-size:0.55rem;color:var(--b3)"> vs '+prevYear+'</span>':'')+'</div>'
+    +'<div class="at-card"><div class="at-label">Total conjunto</div>'
+    +'<div class="at-val both">'+formatCOP(juntos)+'</div>'
+    +'<div class="at-sub">Prom. mensual: '+formatCOP(juntos/12)+'</div>'
+    +(prevJuntos?deltaStr(juntos,prevJuntos)+'<span style="font-size:0.55rem;color:var(--b3)"> vs '+prevYear+'</span>':'')+'</div>';
+
+  // Comparacion trimestral
+  var qLabels=['Q1 Ene–Mar','Q2 Abr–Jun','Q3 Jul–Sep','Q4 Oct–Dic'];
+  var trimHtml='';
+  for(var qi=0;qi<4;qi++){
+    var hasCurQ=trimCas[qi]>SALARIO_BASE*3;
+    var hasPQ=trimPCas[qi]>0;
+    trimHtml+='<div class="trim-card">'
+      +'<div class="trim-label">'+qLabels[qi]+'</div>'
+      +'<div class="trim-vals">'
+      +'<div class="trim-row"><span style="font-size:0.58rem;color:var(--b3)">Castaneda</span></div>'
+      +'<div class="trim-row"><span class="tr-year">'+anualYear+'</span><span class="tr-val cas">'+(hasCurQ?formatCOP(trimCas[qi]):'—')+'</span></div>'
+      +'<div class="trim-row"><span class="tr-year">'+prevYear+'</span><span class="tr-val" style="color:rgba(255,255,255,0.3)">'+(trimPCas[qi]>0?formatCOP(trimPCas[qi]):'—')+'</span></div>'
+      +(hasCurQ&&hasPQ?deltaStr(trimCas[qi],trimPCas[qi]):'')
+      +'<div style="height:0.5rem"></div>'
+      +'<div class="trim-row"><span style="font-size:0.58rem;color:var(--b3)">Garcia</span></div>'
+      +'<div class="trim-row"><span class="tr-year">'+anualYear+'</span><span class="tr-val gar">'+(trimGar[qi]>SALARIO_BASE*3?formatCOP(trimGar[qi]):'—')+'</span></div>'
+      +'<div class="trim-row"><span class="tr-year">'+prevYear+'</span><span class="tr-val" style="color:rgba(255,255,255,0.3)">'+(trimPGar[qi]>0?formatCOP(trimPGar[qi]):'—')+'</span></div>'
+      +(trimGar[qi]>SALARIO_BASE*3&&trimPGar[qi]>0?deltaStr(trimGar[qi],trimPGar[qi]):'')
+      +'</div></div>';
+  }
+  document.getElementById('trim-grid').innerHTML=trimHtml;
+
+  // Barras — dos tonos por mes: año actual + año anterior más tenue
+  var barsHtml='',monthsHtml='';
+  for(var mi=0;mi<12;mi++){
+    var hCas=maxTotal>0?Math.round((barsCas[mi]/maxTotal)*110):0;
+    var hGar=maxTotal>0?Math.round((barsGar[mi]/maxTotal)*110):0;
+    var hPCas=maxTotal>0?Math.round((barsPCas[mi]/maxTotal)*110):0;
+    var hPGar=maxTotal>0?Math.round((barsPGar[mi]/maxTotal)*110):0;
+    var isCurBar=(mi+1===nowM&&anualYear===nowY);
+    barsHtml+='<div class="chart-bar-group">'
+      +'<div class="chart-bar" style="height:'+hPCas+'px;background:rgba(125,211,248,0.22);border-radius:3px 3px 0 0;flex:1"></div>'
+      +'<div class="chart-bar cas" style="height:'+hCas+'px;flex:1"'+(isCurBar?' title="Mes actual"':'')+'></div>'
+      +'<div class="chart-bar" style="height:'+hPGar+'px;background:rgba(253,186,132,0.22);border-radius:3px 3px 0 0;flex:1"></div>'
+      +'<div class="chart-bar gar" style="height:'+hGar+'px;flex:1"></div>'
+      +'</div>';
+    monthsHtml+='<div class="chart-month'+(isCurBar?' cur':'')+'">'+MESES_SHORT[mi]+'</div>';
+  }
+  document.getElementById('chart-bars').innerHTML=barsHtml;
+  document.getElementById('chart-months').innerHTML=monthsHtml;
+  // Leyenda actualizada
+  document.querySelector('.chart-legend').innerHTML=
+    '<span class="cl-dot" style="background:rgba(125,211,248,0.35)"></span><span style="color:var(--b3)">Cas. '+prevYear+'</span>'
+    +'<span class="cl-dot" style="background:#7dd3f8"></span><span>Cas. '+anualYear+'</span>'
+    +'<span class="cl-dot" style="background:rgba(253,186,132,0.35)"></span><span style="color:var(--b3)">Gar. '+prevYear+'</span>'
+    +'<span class="cl-dot" style="background:#fdba84"></span><span>Gar. '+anualYear+'</span>';
+}
+
+// ── BILLING TOGGLE ────────────────────────────────────────────────────────────
+var billingVisible={cas:false,gar:false};
+function toggleBilling(who){
+  billingVisible[who]=!billingVisible[who];
+  var wrap=document.getElementById('billing-wrap-'+who);
+  var eye=document.getElementById('eye-'+who);
+  if(billingVisible[who]){
+    wrap.classList.remove('billing-hidden');
+    eye.style.color='var(--acc)';
+  } else {
+    wrap.classList.add('billing-hidden');
+    eye.style.color='';
+  }
+}
+
+// ── TABS ──────────────────────────────────────────────────────────────────────
+var finUnlocked = false;
+
+function switchTab(tab) {
+  var tabs=['tab-cal','tab-anual','tab-fin'];
+  tabs.forEach(function(id){var el=document.getElementById(id);if(el)el.classList.remove('active');});
+  ['tab-btn-cal','tab-btn-anual','tab-fin-btn'].forEach(function(id){var el=document.getElementById(id);if(el)el.classList.remove('active');});
+  if(tab==='cal'){
+    document.getElementById('tab-cal').classList.add('active');
+    document.getElementById('tab-btn-cal').classList.add('active');
+  } else if(tab==='anual'){
+    document.getElementById('tab-anual').classList.add('active');
+    document.getElementById('tab-btn-anual').classList.add('active');
+    renderAnual();
+  } else if(tab==='fin'){
+    document.getElementById('tab-fin').classList.add('active');
+    document.getElementById('tab-fin-btn').classList.add('active');
+  }
+}
+
+function tryFinanzas() {
+  if(finUnlocked){ switchTab('fin'); return; }
+  document.getElementById('pin-overlay').style.display='flex';
+}
+
+function lockFinanzas() {
+  finUnlocked=false;
+  document.getElementById('tab-fin-btn').classList.remove('unlocked');
+  switchTab('cal');
+}
+
+// Hold-to-unlock logic
+var holdTimer=null, holdStart=null, holdDur=2000;
+var holdBtn=null,holdBar=null,holdRAF=null;
+
+function holdTick(){
+  var elapsed=Date.now()-holdStart;
+  var pct=Math.min(100,elapsed/holdDur*100);
+  if(holdBar)holdBar.style.width=pct+'%';
+  if(pct<100){ holdRAF=requestAnimationFrame(holdTick); }
+  else { unlockFinanzas(); }
+}
+function startHold(e){
+  e.preventDefault();
+  holdStart=Date.now();
+  holdRAF=requestAnimationFrame(holdTick);
+}
+function stopHold(){
+  cancelAnimationFrame(holdRAF);
+  if(holdBar)holdBar.style.width='0%';
+}
+function unlockFinanzas(){
+  finUnlocked=true;
+  if(holdBar)holdBar.style.width='0%';
+  document.getElementById('pin-overlay').style.display='none';
+  document.getElementById('tab-fin-btn').classList.add('unlocked');
+  document.getElementById('fin-locked').style.display='none';
+  document.getElementById('fin-content').style.display='block';
+  renderFinanzas();
+  switchTab('fin');
+}
+function initHoldBtn(){
+  holdBtn=document.getElementById('hold-btn');
+  holdBar=document.getElementById('hold-bar');
+  if(!holdBtn)return;
+  holdBtn.addEventListener('mousedown', startHold);
+  holdBtn.addEventListener('touchstart', startHold, {passive:false});
+  holdBtn.addEventListener('mouseup', stopHold);
+  holdBtn.addEventListener('mouseleave', stopHold);
+  holdBtn.addEventListener('touchend', stopHold);
+  holdBtn.addEventListener('touchcancel', stopHold);
+  document.getElementById('pin-overlay').addEventListener('click', function(e){
+    if(e.target===this){stopHold();this.style.display='none';}
+  });
+}
+
+// ── CAGR & FINANZAS RENDER ─────────────────────────────────────────────────
+var HIST_INGRESOS = [
+  {year:2021, total:252186000, obs:''},
+  {year:2022, total:246016000, obs:''},
+  {year:2023, total:490000000, obs:'Marly + Mederi'},
+  {year:2024, total:511433122, obs:'Solo Marly'},
+  {year:2025, total:590379570, obs:''},
+];
+
+var CAGR_DATA = [
+  {label:'CAGR Total (2021→2025)', years:4, ini:252185000, fin:590379570},
+  {label:'CAGR 3 años (2022→2025)', years:3, ini:246016000, fin:590379570},
+  {label:'CAGR 1 año (2024→2025)', years:1, ini:511433122, fin:590379570},
+];
+
+function calcCAGR(ini,fin,n){ return Math.pow(fin/ini,1/n)-1; }
+function cagrInterp(r){
+  if(r>0.20) return 'Carrera explotando';
+  if(r>0.15) return 'Excelente';
+  if(r>0.12) return 'Muy buen crecimiento';
+  if(r>0.08) return 'Buen crecimiento';
+  if(r>0.05) return 'Creces apenas';
+  return 'Estas estancado';
+}
+
+function renderFinanzas(){
+  // CAGR cards
+  var cagrHtml='<div style="margin-bottom:0.7rem;font-size:0.6rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--b3);font-weight:600;">Tasa de crecimiento anual compuesto</div><div class="cagr-grid">';
+  CAGR_DATA.forEach(function(d){
+    var r=calcCAGR(d.ini,d.fin,d.years);
+    cagrHtml+='<div class="cagr-card"><div class="cagr-label">'+d.label+'</div>'
+      +'<div class="cagr-val">'+(r*100).toFixed(1)+'%</div>'
+      +'<div class="cagr-interp">'+cagrInterp(r)+'</div></div>';
+  });
+  cagrHtml+='</div>';
+  document.getElementById('cagr-section').innerHTML=cagrHtml;
+
+  // Historial ingresos
+  var histHtml='<div style="margin-bottom:0.7rem;font-size:0.6rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--b3);font-weight:600;">Ingresos anuales historicos</div>';
+  histHtml+='<div class="hist-table-wrap"><table class="hist-table"><thead><tr><th>Año</th><th>Ingreso total</th><th>Variacion</th><th>Observacion</th></tr></thead><tbody>';
+  HIST_INGRESOS.forEach(function(d,i){
+    var prev=i>0?HIST_INGRESOS[i-1].total:null;
+    var varPct=prev?((d.total-prev)/prev*100):null;
+    var varStr=varPct!==null?(varPct>=0?'+':'')+varPct.toFixed(1)+'%':'—';
+    var varCls=varPct!==null?(varPct>0?'up':'down'):'';
+    histHtml+='<tr><td>'+d.year+'</td><td>'+formatCOP(d.total)+'</td>'
+      +'<td class="'+varCls+'">'+varStr+'</td><td style="font-family:var(--ff-b);color:var(--b3);font-size:0.65rem;">'+d.obs+'</td></tr>';
+  });
+  histHtml+='</tbody></table></div>';
+  document.getElementById('hist-section').innerHTML=histHtml;
+
+  // Billing summary (read-only from stored values)
+  var billingHtml='<div style="margin-bottom:0.7rem;font-size:0.6rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--b3);font-weight:600;">Facturacion — '+MESES[curMonth]+' '+curYear+'</div><div class="fin-billing">';
+  ['cas','gar'].forEach(function(who){
+    var name=who==='cas'?'Castaneda':'Garcia';
+    var cls=who;
+    var salas=getBilling(who);
+    var pma=getPMA(who)*PMA_CASO;
+    var total=SALARIO_BASE+salas+pma;
+    var hrsEl=document.getElementById('hrs-'+who);
+    var hrs=hrsEl?parseFloat(hrsEl.textContent)||0:0;
+    var vhr=hrs>0?total/hrs:0;
+    billingHtml+='<div class="fin-panel">'
+      +'<div class="fin-panel-name '+cls+'">'+name+'</div>'
+      +'<div class="stat-item" style="padding:0.3rem 0;border-bottom:1px solid var(--b7);"><div class="sl">Salas</div><div class="sv">'+formatCOP(salas)+'</div></div>'
+      +'<div class="stat-item" style="padding:0.3rem 0;border-bottom:1px solid var(--b7);"><div class="sl">PMA ('+getPMA(who)+' casos)</div><div class="sv">'+formatCOP(pma)+'</div></div>'
+      +'<div class="stat-item" style="padding:0.3rem 0;border-bottom:1px solid var(--b7);"><div class="sl">Base</div><div class="sv">'+formatCOP(SALARIO_BASE)+'</div></div>'
+      +'<div class="stat-item" style="padding:0.4rem 0;"><div class="sl">Total mes</div><div style="font-family:var(--ff-m);font-size:0.95rem;color:var(--green-ui);">'+formatCOP(total)+'</div></div>'
+      +'<div style="font-size:0.65rem;color:var(--b3);">'+(vhr>0?formatCOP(vhr)+' / hora':'—')+'</div>'
+      +'</div>';
+  });
+  billingHtml+='</div>';
+  document.getElementById('fin-billing').innerHTML=billingHtml;
+}
+
+// ── FIRESTORE ─────────────────────────────────────────────────────────────────
+function parseFSV(val){
+  if(!val)return null;
+  if(val.stringValue!==undefined)return val.stringValue;
+  if(val.integerValue!==undefined)return parseInt(val.integerValue);
+  if(val.arrayValue!==undefined)return(val.arrayValue.values||[]).map(parseFSV);
+  if(val.mapValue!==undefined){var o={},f=val.mapValue.fields||{};Object.keys(f).forEach(function(k){o[k]=parseFSV(f[k]);});return o;}
+  return null;
+}
+function parseVacData(raw){
+  var r=[];
+  Object.keys(raw).forEach(function(i){var fn=NAMES[parseInt(i)],key=NAME_TO_KEY[fn],vacs=raw[i];if(!key||!Array.isArray(vacs))return;vacs.forEach(function(v){if(v.start&&v.end)r.push({doc:key,desde:v.start,hasta:v.end});});});
+  return r;
+}
+
+loadEdits('cas');loadEdits('gar');loadBilling('cas');loadBilling('gar');loadPMA('cas');loadPMA('gar');
+var sdot=document.getElementById('sdot'),slabel=document.getElementById('slabel');
+fetch(FIRESTORE_URL)
+  .then(function(r){return r.json();})
+  .then(function(data){if(data.fields){allVac=parseVacData(JSON.parse(parseFSV(data.fields.vacaciones)||'{}'));sdot.className='sdot ok';slabel.textContent='Vacaciones sincronizadas';}})
+  .catch(function(){sdot.className='sdot err';slabel.textContent='Error al cargar vacaciones';})
+  .finally(function(){renderAll();});
+
+initHoldBtn();
+</script>
+
+</body>
+</html>
