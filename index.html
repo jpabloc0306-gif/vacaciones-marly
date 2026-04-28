@@ -237,8 +237,8 @@ z-index: 399; backdrop-filter: blur(2px);
     <p>Clínica de Marly — <span id="year-label"></span></p>
   </div>
   <div class="header-right">
-    <div class="badge green">24 médicos</div>
-    <div class="badge amber">Máx. 2 simultáneos</div>
+    <div class="badge green">25 médicos</div>
+    <div class="badge amber">Máx. 4 simultáneos</div>
     <div class="badge" id="sync-badge" style="background:#e8f0ff;color:#1a3a8f;border-color:#aac0f0;">● Conectando…</div>
     <div class="badge" id="role-badge">Vista pública</div>
     <button class="role-btn" id="role-btn" onclick="handleRoleBtn()">🔒 Admin</button>
@@ -251,8 +251,8 @@ z-index: 399; backdrop-filter: blur(2px);
       <h3>Referencia</h3>
       <div class="legend-items">
         <div class="legend-row"><div class="lsq free"></div>Disponible (0)</div>
-        <div class="legend-row"><div class="lsq warn"></div>Casi lleno (1)</div>
-        <div class="legend-row"><div class="lsq full"></div>Completo (2+)</div>
+        <div class="legend-row"><div class="lsq warn"></div>1 médico</div>
+        <div class="legend-row"><div class="lsq full"></div>2 o más médicos</div>
         <div class="legend-row"><div class="lsq mine"></div>Médico seleccionado</div>
       </div>
     </div>
@@ -338,14 +338,15 @@ const db = getFirestore(fbApp);
 const DOC_REF = doc(db, "vacaciones", "datos");
 
 let ADMIN_PASSWORD = 'marly2025'; // overwritten by Firebase on load
-const MAX_SOFT = 1, MAX_HARD = 2, MAX_ALERT = 3, MAX_DAYS = 21;
+const MAX_SOFT = 1, MAX_HARD = 2, MAX_ALERT = 4, MAX_BLOCK = 5, MAX_DAYS = 21;
 const NAMES = [
   'Leonardo Cendales','Andrés Ruiz','Enrique Lopierre','Mauricio Pérez',
   'Laura Tobos','Luisa Aguirre','Andrés Diaz','JB Silva',
   'Carmen Teresa Mojica','Luis Eduardo Silva','Alexandra Vargas','María José Cantillo',
   'Juan Manuel Arias','Germán Gutiérrez','Cristian Chamorro','Juan Carlos Téllez',
   'Angela Taborda','Edna Cruz','Luis Fernando Álvarez','Rafael Turriago',
-  'Carlos Higuera','Juan Pablo Castañeda','María Cecilia García','José Luis Pay'
+  'Carlos Higuera','Juan Pablo Castañeda','María Cecilia García','José Luis Pay',
+  'Edwin Sanchez'
 ];
 const MONTHS_ES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 const DAYS_SHORT = ['Lu','Ma','Mi','Ju','Vi','Sa','Do'];
@@ -514,9 +515,9 @@ window.assignVacation=async()=>{
   allDates(start,end).forEach(d=>{
     if(isWeekend(d))return;
     const cnt=(occ[d]||[]).filter(x=>x!==docId).length;
-    if(cnt>=MAX_ALERT) hardBlocked.push(d);
-    else if(cnt>=MAX_HARD) alertDays.push(d);
-    else if(cnt>=MAX_SOFT) warnDays.push(d);
+    if(cnt>=MAX_BLOCK) hardBlocked.push(d);
+    else if(cnt>=MAX_ALERT) alertDays.push(d);
+    else if(cnt>=MAX_HARD) warnDays.push(d);
   });
 
   // Hard block: already 3 doctors on those days
@@ -525,7 +526,7 @@ window.assignVacation=async()=>{
   // Alert: would put 3rd doctor on some days — admin must confirm
   if(alertDays.length>0){
     const datesStr=alertDays.slice(0,3).join(', ')+(alertDays.length>3?` y ${alertDays.length-3} más`:'');
-    const confirmMsg=`⚠ ALERTA: Estas fechas ya tienen 2 anestesiólogos de vacaciones:\n${datesStr}\n\nAl asignar estas vacaciones quedarían 3 simultáneos en esos días.\n\n¿Deseas autorizar de todas formas?`;
+    const confirmMsg=`⚠ ALERTA: Estas fechas ya tienen ${MAX_ALERT-1} anestesiólogos de vacaciones:\n${datesStr}\n\nAl asignar estas vacaciones quedarían ${MAX_ALERT} simultáneos en esos días.\n\n¿Deseas autorizar de todas formas?`;
     if(!confirm(confirmMsg)){
       showAssignStatus('warn','Vacaciones no asignadas. Autorización denegada.');
       return;
@@ -562,10 +563,9 @@ function buildMonth(year,month,occ){
   for(let d=1;d<=dim;d++){
     const ds=`${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
     const docIds=occ[ds]||[],cnt=docIds.length,weekend=isWeekend(ds),isMine=selectedDoc!==null&&docIds.includes(selectedDoc);
-    let state='s-free';
-    if(cnt>=MAX_HARD) state='s-full';
-    else if(cnt>=MAX_SOFT) state='s-warn';
-    else if(cnt>0) state='s-occ';
+    let state='s-free';      // 0 médicos = verde
+    if(cnt>=2) state='s-full';  // 2+ médicos = rojo
+    else if(cnt===1) state='s-warn'; // 1 médico = amarillo
     if(isMine) state='s-mine';
     const cell=document.createElement('div');
     // Remove 'weekend' dimming class when doctor has vacations on that day
@@ -601,9 +601,9 @@ function showDayPopup(ds,docIds,event){
   const cnt=docIds.length;
   let badgeClass='empty', badgeText='✓ Nadie de vacaciones';
   if(cnt>=MAX_ALERT){badgeClass='full';badgeText=`⛔ Excepción autorizada (${cnt} médicos)`;}
-  else if(cnt>=MAX_HARD){badgeClass='full';badgeText=`⛔ Cupo completo (${cnt}/${MAX_HARD})`;}
-  else if(cnt>=MAX_SOFT){badgeClass='warn';badgeText=`⚠ Casi lleno (${cnt}/${MAX_HARD})`;}
-  else if(cnt>0){badgeClass='ok';badgeText=`✓ Disponible (${cnt}/${MAX_HARD})`;}
+  else if(cnt>=MAX_HARD){badgeClass='full';badgeText=`⛔ Cupo completo (${cnt}/${MAX_ALERT})`;}
+  else if(cnt>=MAX_SOFT){badgeClass='warn';badgeText=`⚠ Casi lleno (${cnt}/${MAX_ALERT})`;}
+  else if(cnt>0){badgeClass='ok';badgeText=`✓ Disponible (${cnt}/${MAX_ALERT})`;}
   document.getElementById('panel-status').innerHTML=`<span class="panel-status-badge ${badgeClass}">${badgeText}</span>`;
 
   // Names list
