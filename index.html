@@ -238,7 +238,7 @@ z-index: 399; backdrop-filter: blur(2px);
   </div>
   <div class="header-right">
     <div class="badge green">25 médicos</div>
-    <div class="badge amber">Máx. 4 simultáneos</div>
+    <div class="badge amber">Máx. 2 · Alerta en 3–4</div>
     <div class="badge" id="sync-badge" style="background:#e8f0ff;color:#1a3a8f;border-color:#aac0f0;">● Conectando…</div>
     <div class="badge" id="role-badge">Vista pública</div>
     <button class="role-btn" id="role-btn" onclick="handleRoleBtn()">🔒 Admin</button>
@@ -338,7 +338,7 @@ const db = getFirestore(fbApp);
 const DOC_REF = doc(db, "vacaciones", "datos");
 
 let ADMIN_PASSWORD = 'marly2025'; // overwritten by Firebase on load
-const MAX_SOFT = 1, MAX_HARD = 2, MAX_ALERT = 4, MAX_BLOCK = 5, MAX_DAYS = 21;
+const MAX_SOFT = 1, MAX_HARD = 2, MAX_ALERT_LOW = 3, MAX_ALERT_HIGH = 4, MAX_BLOCK = 5, MAX_DAYS = 21;
 const NAMES = [
   'Leonardo Cendales','Andrés Ruiz','Enrique Lopierre','Mauricio Pérez',
   'Laura Tobos','Luisa Aguirre','Andrés Diaz','JB Silva',
@@ -516,17 +516,21 @@ window.assignVacation=async()=>{
     if(isWeekend(d))return;
     const cnt=(occ[d]||[]).filter(x=>x!==docId).length;
     if(cnt>=MAX_BLOCK) hardBlocked.push(d);
-    else if(cnt>=MAX_ALERT) alertDays.push(d);
-    else if(cnt>=MAX_HARD) warnDays.push(d);
+    else if(cnt>=MAX_ALERT_LOW) alertDays.push(d); // 3 or 4 — needs confirm
+    else if(cnt>=MAX_HARD) warnDays.push(d);        // exactly 2 — normal block
   });
 
   // Hard block: already 3 doctors on those days
-  if(hardBlocked.length>0)return showAssignStatus('err',`⛔ Bloqueado: ${hardBlocked.slice(0,2).join(', ')}${hardBlocked.length>2?'…':''} ya tienen 3 médicos de vacaciones.`);
+  // Block: days already at MAX_HARD (2)
+  if(warnDays.length>0)return showAssignStatus('err',`⛔ Bloqueado: ${warnDays.slice(0,2).join(', ')}${warnDays.length>2?'…':''} ya tienen ${MAX_HARD} anestesiólogos de vacaciones.`);
+  if(hardBlocked.length>0)return showAssignStatus('err',`⛔ Bloqueado: ${hardBlocked.slice(0,2).join(', ')}${hardBlocked.length>2?'…':''} ya tienen ${MAX_BLOCK} médicos de vacaciones.`);
 
-  // Alert: would put 3rd doctor on some days — admin must confirm
+  // Alert: 3rd or 4th doctor — admin must confirm
   if(alertDays.length>0){
     const datesStr=alertDays.slice(0,3).join(', ')+(alertDays.length>3?` y ${alertDays.length-3} más`:'');
-    const confirmMsg=`⚠ ALERTA: Estas fechas ya tienen ${MAX_ALERT-1} anestesiólogos de vacaciones:\n${datesStr}\n\nAl asignar estas vacaciones quedarían ${MAX_ALERT} simultáneos en esos días.\n\n¿Deseas autorizar de todas formas?`;
+    // Count how many are already on those days to tailor message
+    const maxOnAlertDay = alertDays.reduce((m,d)=>Math.max(m,(buildOccMap()[d]||[]).filter(x=>x!==docId).length),0);
+    const confirmMsg=`⚠ ALERTA: Algunas fechas ya tienen ${maxOnAlertDay} anestesiólogo${maxOnAlertDay!==1?'s':''} de vacaciones:\n${datesStr}\n\nAl asignar quedarían ${maxOnAlertDay+1} simultáneos.\n\n¿Deseas autorizar de todas formas?`;
     if(!confirm(confirmMsg)){
       showAssignStatus('warn','Vacaciones no asignadas. Autorización denegada.');
       return;
