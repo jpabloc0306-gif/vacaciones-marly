@@ -572,7 +572,8 @@ function showDayPopup(ds,docIds,event){
   const cnt=docIds.length;
   let badgeClass='empty',badgeText='✓ Nadie de vacaciones';
   if(cnt>=MAX_BLOCK){badgeClass='full';badgeText=`⛔ Bloqueado (${cnt} médicos)`;}
-  else if(cnt>=MAX_NORMAL){badgeClass='full';badgeText=`⚠ Excepción autorizada (${cnt} médicos)`;}
+  else if(cnt>MAX_NORMAL){badgeClass='full';badgeText=`⚠ Excepción autorizada (${cnt} médicos)`;}
+  else if(cnt===MAX_NORMAL){badgeClass='full';badgeText=`⛔ Cupo completo (${cnt} médicos)`;}
   else if(cnt===1){badgeClass='warn';badgeText=`⚠ 1 médico de vacaciones`;}
   document.getElementById('panel-status').innerHTML=`<span class="panel-status-badge ${badgeClass}">${badgeText}</span>`;
   const namesEl=document.getElementById('panel-names');namesEl.innerHTML='';
