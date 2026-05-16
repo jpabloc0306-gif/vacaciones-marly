@@ -1554,6 +1554,21 @@ function loadTribAnts(year){
 }
 
 // Get monthly income for a person in a given year
+function loadAllMonths(year){
+  ['cas','gar'].forEach(function(who){
+    for(var m=1;m<=12;m++){
+      var mm=String(m).padStart(2,'0');
+      [['b','billing'],['p','pma'],['x','extra']].forEach(function(pair){
+        var prefix=pair[0];
+        var fullKey=prefix+'-'+who+'-'+year+'-'+mm;
+        try{
+          var v=localStorage.getItem('marly-'+fullKey);
+          if(v!==null)memStore[fullKey]=parseFloat(v)||0;
+        }catch(e){}
+      });
+    }
+  });
+}
 function getMonthIncome(who,year,month){
   var mm=String(month).padStart(2,'0');
   var salas=memStore['b-'+who+'-'+year+'-'+mm]||0;
@@ -1608,6 +1623,7 @@ function saveTribInput(who,year,bim){
 
 function renderTrib(){
   document.getElementById('trib-year-label').textContent=tribYear;
+  loadAllMonths(tribYear);
   loadTribAnts(tribYear);
 
   var uvt=getUVT(tribYear);
@@ -1847,6 +1863,7 @@ renderAll();
 // Load calendar data from Firestore, then vacaciones
 fsLoadAll(function(){
   loadEdits('cas');loadEdits('gar');loadBilling('cas');loadBilling('gar');loadPMA('cas');loadPMA('gar');loadExtra('cas');loadExtra('gar');loadUVTs();
+  loadAllMonths(2025);loadAllMonths(2026);loadAllMonths(2027);
   renderAll();
   // Now load vacaciones
   fetch(FIRESTORE_URL)
