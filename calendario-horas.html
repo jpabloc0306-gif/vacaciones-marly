@@ -781,7 +781,25 @@ function getPMA(who){return memStore[pk(who)]||0;}
 function saveExtra(who,val){memStore[xk(who)]=val;try{localStorage.setItem('marly-'+xk(who),String(val));}catch(e){}fsSync();}
 function getExtra(who){return memStore[xk(who)]||0;}
 function loadExtra(who){try{var v=localStorage.getItem('marly-'+xk(who));if(v)memStore[xk(who)]=parseFloat(v)||0;}catch(e){}}
-function parseCOP(v){if(!v)return 0;return parseFloat(String(v).replace(/[^0-9.]/g,''))||0;}
+function parseCOP(v){
+  if(!v)return 0;
+  var s=String(v).trim();
+  // Remove $ and spaces
+  s=s.replace(/[$\s]/g,'');
+  // Colombian format: 47.000.000 (dots=thousands) or 47,000.50 (comma=decimal)
+  // If multiple dots, they are thousands separators -> remove them
+  var dots=(s.match(/\./g)||[]).length;
+  var commas=(s.match(/,/g)||[]).length;
+  if(dots>1){s=s.replace(/\./g,'');} // 47.000.000 -> 47000000
+  else if(dots===1&&commas===0){
+    // Could be decimal (47.5) or thousands (47.000) - check digits after dot
+    var parts=s.split('.');
+    if(parts[1]&&parts[1].length===3)s=s.replace('.',''); // thousands
+    // else leave as decimal
+  }
+  s=s.replace(/,/g,''); // remove any remaining commas
+  return parseFloat(s)||0;
+}
 function formatCOP(v){if(!v||v===0)return '$0';return '$'+Math.round(v).toLocaleString('es-CO');}
 function saveBilling(who,val){
   memStore[bk(who)]=val;
