@@ -214,6 +214,8 @@ border:1.5px solid transparent;}
 
 .dc.tcuad{border-color:rgba(251,146,60,0.85)!important;background:var(–b7)!important;}
 .dc.favor{border-color:rgba(245,200,66,0.8)!important;}
+.dc-plan-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(–acc);margin-left:3px;vertical-align:middle;flex-shrink:0;}
+.dc-plan-note{font-size:0.42rem;color:var(–acc);opacity:0.85;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;text-align:center;}
 .dc.today{outline:2px solid var(–acc);outline-offset:1px;}
 
 /* con trabajo */
@@ -581,7 +583,7 @@ function tipoTag(pos, tipo, dayType){
   if(!pos||pos===0)   return 'Libre';
   if(pos===9)  return 'Turno';
   if(pos===10) return 'Posturno';
-  if(pos===7)  return 'Maternidad';
+  if(pos===7)  return 'Mater';
   if((pos===4||pos===12)&&dayType!=='sab') return 'Consulta';
   if(pos===8&&dayType==='sab') return 'Consulta';
   if(pos===1)  return 'P1';
@@ -902,6 +904,7 @@ function renderPanel(doc,who){
 
     var festPip=esFest?'<span class="fest-pip"></span>':'';
     var noteHtml='';
+    if(edit&&edit.plan)noteHtml+='<div class="dc-plan-note">&#128197; '+edit.plan+'</div>';
     if(edit&&edit.tcuad)noteHtml+='<div class="dc-note note-tcuad">TC: '+initials(edit.tcuad)+'</div>';
     if(edit&&(edit.favor||edit.favorSvc))noteHtml+='<div class="dc-note note-favor">Fav: '+(edit.favorSvc?'Srv':initials(edit.favor))+'</div>';
     var styleAttr='';
@@ -986,6 +989,7 @@ function openModal(day,who){
   // Check if this day is turno (auto or edited to pos 9)
   var isEdited=!!edit;
   var isTurnoDay=(auto.pos===9||curPos===9);
+  var hrsParaLibre=(curPos===0||curPos===10||(!curPos&&auto.pos!==9));
   var savedDturnoPos=edit?edit.dturnoPos||0:0;
   var savedDturnoHrs=edit&&edit.dturnoHrs!==undefined?edit.dturnoHrs:'';
 
@@ -1025,6 +1029,8 @@ function openModal(day,who){
     +'<div class="mfield"><label>Horas efectivas</label><input type="number" id="m-hrs" min="0" max="24" step="0.5" value="'+curHrs+'" placeholder="0" /></div>'
     +'<div class="mfield"><label>Turno cuadrado con</label>'+buildAnestSelectTcuad('m-tcuad',savedTcuad)+'</div>'
     +'<div class="mfield"><label>Favor a</label>'+buildAnestSelect('m-favor',savedFavorSvc?'__svc__':savedFavor)+'</div>'
+    +(hrsParaLibre?'<div class="mfield"><label>Plan / evento este dia</label><input type="text" id="m-plan" maxlength="30" placeholder="Ej: Cumpleanos, viaje..." value="'+(edit&&edit.plan?edit.plan:'')+
+    '" style="font-family:var(--ff-m);font-size:0.75rem;background:var(--b7);border:1px solid var(--b5);border-radius:6px;color:var(--wh);padding:0.34rem 0.55rem;outline:none;width:100%"/></div>':'')
     +'</div>'
     +turnoSeccion
     +'<div class="mbtn-row"><button class="mbtn save" onclick="saveModal()">Guardar</button>'
@@ -1060,7 +1066,9 @@ function saveModal(){
   if(dtPosEl)dturnoPos=parseInt(dtPosEl.value)||0;
   if(dtHrsEl)dturnoHrs=parseFloat(dtHrsEl.value)||0;
   if(dtQuienEl)dturnoQuien=dtQuienEl.value||'';
-  saveEdit(_mWho,_mDay,{pos:pos,horas:hrs,tcuad:tcuad,favor:favor,favorSvc:favorSvc,dturnoPos:dturnoPos,dturnoHrs:dturnoHrs,dturnoQuien:dturnoQuien});
+  var planEl=document.getElementById('m-plan');
+  var plan=planEl?planEl.value.trim():'';
+  saveEdit(_mWho,_mDay,{pos:pos,horas:hrs,tcuad:tcuad,favor:favor,favorSvc:favorSvc,dturnoPos:dturnoPos,dturnoHrs:dturnoHrs,dturnoQuien:dturnoQuien,plan:plan});
   document.getElementById('mo').classList.remove('open');
   renderPanel(_mWho==='cas'?'Castaneda':'Garcia',_mWho);
 }
@@ -1369,8 +1377,12 @@ function switchTab(tab) {
 }
 
 function tryFinanzas() {
-  if(finUnlocked){ switchTab('fin'); return; }
-  document.getElementById('pin-overlay').style.display='flex';
+  finUnlocked=true;
+  document.getElementById('tab-fin-btn').classList.add('unlocked');
+  document.getElementById('fin-locked').style.display='none';
+  document.getElementById('fin-content').style.display='block';
+  renderFinanzas();
+  switchTab('fin');
 }
 
 function lockFinanzas() {
