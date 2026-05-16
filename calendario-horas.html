@@ -832,14 +832,15 @@ function updateVHr(who){
   var salas=getBilling(who);
   var pma=getPMA(who)*PMA_CASO;
   var extra=getExtra(who);
-  var total=SALARIO_BASE+salas+pma+extra;
+  var totalClinica=SALARIO_BASE+salas+pma;
+  var total=totalClinica+extra;
   var telEl=document.getElementById('total-'+who);
   var desEl=document.getElementById('desglose-'+who);
   var vhrEl=document.getElementById('vhr-'+who);
   var extEl=document.getElementById('extra-total-'+who);
   if(telEl)telEl.textContent=formatCOP(total);
   if(desEl)desEl.textContent='Base '+formatCOP(SALARIO_BASE)+' + Salas '+formatCOP(salas)+' + PMA '+formatCOP(pma)+(extra?' + Extra '+formatCOP(extra):'');
-  if(vhrEl)vhrEl.textContent=(total>0&&hrs>0)?formatCOP(total/hrs)+' / h':'—';
+  if(vhrEl)vhrEl.textContent=(totalClinica>0&&hrs>0)?formatCOP(totalClinica/hrs)+' / h':'—';
   if(extEl)extEl.textContent=extra>0?formatCOP(extra):'';
 }
 function initBillingVisibility(){
@@ -1792,6 +1793,8 @@ function fsSync(){
 }
 
 function fsSaveAll(){
+  // Load all months into memStore before saving so nothing is lost
+  loadAllMonths(2024);loadAllMonths(2025);loadAllMonths(2026);loadAllMonths(2027);
   // Build payload: all memStore keys
   var fields={};
   Object.keys(memStore).forEach(function(k){
@@ -1857,6 +1860,8 @@ function parseVacData(raw){
 loadEdits('cas');loadEdits('gar');loadBilling('cas');loadBilling('gar');loadPMA('cas');loadPMA('gar');loadExtra('cas');loadExtra('gar');loadUVTs();
 var sdot=document.getElementById('sdot'),slabel=document.getElementById('slabel');
 sdot.className='sdot';slabel.textContent='Cargando datos...';
+// Load all months from localStorage before first render
+loadAllMonths(2025);loadAllMonths(2026);loadAllMonths(2027);
 // Render calendar immediately with local data so it's not blank
 renderAll();
 
