@@ -1629,10 +1629,6 @@ function getMonthIncome(who,year,month){
 function getTribIngresos(who,year){
   var total=0;
   for(var m=1;m<=12;m++) total+=getMonthIncome(who,year,m);
-  // Sumar ganancias de bolsa solo a Castaneda (quien opera en bolsa)
-  // Si ambos operan, cada uno suma la mitad o el total segun corresponda
-  // Por ahora: el total de bolsa se suma al ingreso anual de quien corresponde
-  // Solo se suma en el total anual para efectos tributarios, no en bimestrales
   if(who==='cas') total+=getBolsaTotalForTrib(year);
   return total;
 }
@@ -1873,17 +1869,26 @@ function renderFinanzas(){
   // ── Calcular 2026 acumulado + proyeccion
   loadAllMonths(2026);
   var acum2026=0;
+  var mesesConDatos=0;
   for(var m=1;m<=nowM;m++){
-    acum2026+=getMonthIncome('cas',2026,m);
+    var mm=String(m).padStart(2,'0');
+    var salas2026=memStore['b-cas-2026-'+mm]||0;
+    var pma2026=(memStore['p-cas-2026-'+mm]||0)*PMA_CASO;
+    var extra2026=memStore['x-cas-2026-'+mm]||0;
+    // Solo contar el mes si tiene datos ingresados (salas o PMA o extra)
+    if(salas2026>0||pma2026>0||extra2026>0){
+      acum2026+=SALARIO_BASE+salas2026+pma2026+extra2026;
+      mesesConDatos++;
+    }
   }
   acum2026+=getBolsaTotalForTrib(2026);
-  var proy2026=nowM>0?Math.round(acum2026/nowM*12):0;
+  var proy2026=mesesConDatos>0?Math.round(acum2026/mesesConDatos*12):0;
   var fin2025=590379570; // base para CAGR
 
   // ── Tabla historica con 2026
   var histRows=HIST_INGRESOS.slice();
   // Agregar 2026 dinamicamente
-  histRows.push({year:2026, total:acum2026, proy:proy2026, mes:nowM, obs:'En curso'});
+  histRows.push({year:2026, total:acum2026, proy:proy2026, mes:mesesConDatos, obs:'En curso'});
 
   // ── CAGR dinamico incluyendo 2026 proyectado
   var cagrDinamico=[
