@@ -1891,13 +1891,13 @@ renderAll();
 fsLoadAll(function(){
   loadEdits('cas');loadEdits('gar');loadBilling('cas');loadBilling('gar');loadPMA('cas');loadPMA('gar');loadExtra('cas');loadExtra('gar');loadUVTs();
   loadAllMonths(2025);loadAllMonths(2026);loadAllMonths(2027);
+  sdot.className='sdot ok';slabel.textContent='Sincronizado';
   renderAll();
-  // Now load vacaciones
+  // Load vacaciones in background without blocking the status bar
   fetch(FIRESTORE_URL)
     .then(function(r){return r.json();})
-    .then(function(data){if(data.fields){allVac=parseVacData(JSON.parse(parseFSV(data.fields.vacaciones)||'{}'));sdot.className='sdot ok';slabel.textContent='Sincronizado';}})
-    .catch(function(){sdot.className='sdot err';slabel.textContent='Sin conexion';})
-    .finally(function(){renderAll();});
+    .then(function(data){if(data.fields){allVac=parseVacData(JSON.parse(parseFSV(data.fields.vacaciones)||'{}'));renderAll();}})
+    .catch(function(){});
 });
 
 initHoldBtn();
