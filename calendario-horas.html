@@ -1651,85 +1651,152 @@ function renderTrib(){
   loadTribAnts(tribYear);
 
   var uvt=getUVT(tribYear);
+  var nowM=new Date().getMonth()+1;
+  var nowY=new Date().getFullYear();
+  // Meses transcurridos (para proyeccion)
+  var mesesTransc=(tribYear<nowY)?12:(tribYear===nowY?nowM:0);
+
+  // Escalones clave en pesos
+  var lim1=6000*uvt;   // 7.3% empieza aqui
+  var lim2=15000*uvt;  // 12% empieza aqui
+  var lim3=30000*uvt;  // 14.5% empieza aqui
+
   var html='';
 
   ['cas','gar'].forEach(function(who){
     var name=who==='cas'?'Castaneda':'Garcia';
-    var cls=who;
+    var color=who==='cas'?'#7dd3f8':'#fdba74';
     var ingresoAnual=getTribIngresos(who,tribYear);
+    var enUVT=ingresoAnual/uvt;
     var tarifa=getTasaSimple(ingresoAnual,tribYear);
     var impuestoTotal=Math.round(ingresoAnual*tarifa.tasa);
     var bims=calcTribBimestral(who,tribYear);
     var totalPagado=bims.reduce(function(s,b){return s+(b.anticipoPagado||0);},0);
     var saldo=impuestoTotal-totalPagado;
-    var enUVT=(ingresoAnual/uvt).toFixed(0);
 
-    // Header card
+    // Proyeccion anual basada en meses transcurridos
+    var proyAnual=mesesTransc>0?Math.round(ingresoAnual/mesesTransc*12):ingresoAnual;
+    var proyUVT=proyAnual/uvt;
+    var proyTarifa=getTasaSimple(proyAnual,tribYear);
+    var proyImpuesto=Math.round(proyAnual*proyTarifa.tasa);
+
+    // Margen al siguiente escalon
+    var margenSig=0, labelSig='', pctActual=0, limiteSig=0;
+    if(enUVT<6000){
+      limiteSig=lim1; margenSig=lim1-ingresoAnual;
+      labelSig='al 7.3%'; pctActual=enUVT/6000;
+    } else if(enUVT<15000){
+      limiteSig=lim2; margenSig=lim2-ingresoAnual;
+      labelSig='al 12%'; pctActual=(enUVT-6000)/9000;
+    } else if(enUVT<30000){
+      limiteSig=lim3; margenSig=lim3-ingresoAnual;
+      labelSig='al 14.5%'; pctActual=(enUVT-15000)/15000;
+    } else {
+      limiteSig=0; margenSig=0; labelSig=''; pctActual=1;
+    }
+    var pctBar=Math.min(100,Math.round(pctActual*100));
+
+    // Color barra segun proximidad
+    var barColor=pctBar>85?'var(--c-turno)':pctBar>65?'var(--acc)':'var(--green-ui)';
+    var alertaMsg='';
+    if(margenSig>0){
+      if(pctBar>90) alertaMsg='⚠️ Muy cerca del escalon '+labelSig+' — te quedan '+formatCOP(margenSig);
+      else if(pctBar>75) alertaMsg='Atención: te quedan '+formatCOP(margenSig)+' para subir '+labelSig;
+    }
+    // Alerta proyeccion
+    var proyAlerta='';
+    if(proyTarifa.tasa>tarifa.tasa){
+      proyAlerta='📈 A este ritmo terminas en el escalon '+(proyTarifa.tasa*100).toFixed(1)+'%';
+    } else if(mesesTransc>0&&mesesTransc<12){
+      proyAlerta='Proyeccion anual: '+formatCOP(proyAnual)+' ('+proyUVT.toFixed(0)+' UVT)';
+    }
+
     html+='<div style="background:var(--b8);border:1px solid var(--b6);border-radius:12px;padding:1rem 1.2rem;margin-bottom:1rem;">';
-    html+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.8rem;">';
-    html+='<div style="font-family:var(--ff-d);font-size:1rem;font-weight:800;color:'+(who==='cas'?'#7dd3f8':'#fdba84')+'"">'+name+'</div>';
-    html+='<div style="text-align:right;"><div style="font-family:var(--ff-m);font-size:1.1rem;color:var(--green-ui)">'+formatCOP(ingresoAnual)+'</div>';
-    html+='<div style="font-size:0.55rem;color:var(--b2);text-transform:uppercase">Ingresos '+tribYear+' · '+enUVT+' UVT</div></div></div>';
 
-    // Tarifa chip
-    html+='<div style="display:flex;gap:0.5rem;align-items:center;margin-bottom:0.8rem;flex-wrap:wrap;">';
-    html+='<div style="background:var(--b7);border-radius:6px;padding:0.3rem 0.7rem;font-size:0.62rem;color:var(--b1)">Tarifa: <strong style="color:var(--acc)">'+(tarifa.tasa*100).toFixed(1)+'%</strong> ('+tarifa.label+')</div>';
-    html+='<div style="background:var(--b7);border-radius:6px;padding:0.3rem 0.7rem;font-size:0.62rem;color:var(--b1)">Impuesto est.: <strong style="color:var(--c-turno)">'+formatCOP(impuestoTotal)+'</strong></div>';
-    html+='<div style="background:var(--b7);border-radius:6px;padding:0.3rem 0.7rem;font-size:0.62rem;color:var(--b1)">Anticipos pagados: <strong style="color:var(--green-ui)">'+formatCOP(totalPagado)+'</strong></div>';
-    html+='<div style="background:var(--b7);border-radius:6px;padding:0.3rem 0.7rem;font-size:0.62rem;color:var(--b1)">Saldo est.: <strong style="color:'+(saldo>0?'var(--c-turno)':'var(--green-ui)')+'">'+formatCOP(Math.abs(saldo))+(saldo>0?' a pagar':' a favor')+'</strong></div>';
+    // Header
+    html+='<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:0.9rem;">';
+    html+='<div style="font-family:var(--ff-d);font-size:1rem;font-weight:800;color:'+color+'">'+name+'</div>';
+    html+='<div style="text-align:right;">';
+    html+='<div style="font-family:var(--ff-m);font-size:1.05rem;color:var(--green-ui)">'+formatCOP(ingresoAnual)+'</div>';
+    html+='<div style="font-size:0.55rem;color:var(--b2);margin-top:0.08rem;">'+enUVT.toFixed(0)+' UVT · tarifa actual <strong style="color:var(--acc)">'+(tarifa.tasa*100).toFixed(1)+'%</strong></div>';
+    html+='</div></div>';
+
+    // Barra de progreso hacia siguiente escalon
+    if(margenSig>0){
+      var rangoLabel=enUVT<6000?'0 – 6.000 UVT (5.9%)':enUVT<15000?'6.000 – 15.000 UVT (7.3%)':'15.000 – 30.000 UVT (12%)';
+      html+='<div style="margin-bottom:0.9rem;">';
+      html+='<div style="display:flex;justify-content:space-between;margin-bottom:0.3rem;">';
+      html+='<span style="font-size:0.56rem;color:var(--b3);">'+rangoLabel+'</span>';
+      html+='<span style="font-size:0.56rem;color:'+barColor+';">'+pctBar+'% del tramo</span>';
+      html+='</div>';
+      // Barra
+      html+='<div style="height:8px;background:var(--b7);border-radius:4px;overflow:hidden;">';
+      html+='<div style="height:100%;width:'+pctBar+'%;background:'+barColor+';border-radius:4px;transition:width 0.5s;"></div>';
+      html+='</div>';
+      // Margen restante
+      html+='<div style="display:flex;justify-content:space-between;margin-top:0.3rem;">';
+      html+='<span style="font-size:0.55rem;color:var(--b3);">Llevas '+formatCOP(ingresoAnual)+'</span>';
+      html+='<span style="font-size:0.55rem;color:'+barColor+';">Faltan '+formatCOP(margenSig)+' '+labelSig+'</span>';
+      html+='</div>';
+      if(alertaMsg) html+='<div style="margin-top:0.4rem;font-size:0.62rem;color:var(--c-turno);font-weight:600;">'+alertaMsg+'</div>';
+      html+='</div>';
+    }
+
+    // Proyeccion
+    if(proyAlerta&&mesesTransc>0&&mesesTransc<12){
+      html+='<div style="background:var(--b7);border-radius:8px;padding:0.45rem 0.7rem;margin-bottom:0.8rem;font-size:0.62rem;color:'+(proyTarifa.tasa>tarifa.tasa?'var(--c-turno)':'var(--b2)')+';">'+proyAlerta+'</div>';
+    }
+
+    // Resumen impuesto
+    html+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;margin-bottom:0.9rem;">';
+    html+='<div style="background:var(--b7);border-radius:8px;padding:0.5rem 0.7rem;">';
+    html+='<div style="font-size:0.52rem;color:var(--b3);text-transform:uppercase;margin-bottom:0.18rem;">Impuesto estimado</div>';
+    html+='<div style="font-family:var(--ff-m);font-size:0.85rem;color:var(--c-turno);">'+formatCOP(impuestoTotal)+'</div>';
     html+='</div>';
+    html+='<div style="background:var(--b7);border-radius:8px;padding:0.5rem 0.7rem;">';
+    html+='<div style="font-size:0.52rem;color:var(--b3);text-transform:uppercase;margin-bottom:0.18rem;">Saldo '+(saldo>0?'a pagar':'a favor')+'</div>';
+    html+='<div style="font-family:var(--ff-m);font-size:0.85rem;color:'+(saldo>0?'var(--c-turno)':'var(--green-ui)')+';">'+formatCOP(Math.abs(saldo))+'</div>';
+    html+='</div></div>';
 
     // Anticipos bimestrales
-    html+='<div style="font-size:0.55rem;text-transform:uppercase;letter-spacing:0.07em;color:var(--b3);margin-bottom:0.5rem;font-weight:600;">Anticipos bimestrales</div>';
-    html+='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:0.5rem;">';
+    html+='<div style="font-size:0.55rem;text-transform:uppercase;letter-spacing:0.07em;color:var(--b3);margin-bottom:0.5rem;font-weight:600;">Anticipos bimestrales · 7.3%</div>';
+    html+='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:0.45rem;">';
     bims.forEach(function(b){
+      var pagado=b.anticipoPagado>0;
       var diff=b.anticipoPagado-b.anticipoTeorico;
-      var diffCol=diff>=0?'var(--green-ui)':'var(--c-turno)';
-      html+='<div style="background:var(--b7);border:1px solid var(--b6);border-radius:8px;padding:0.5rem 0.6rem;">';
-      html+='<div style="font-size:0.55rem;color:var(--b2);margin-bottom:0.25rem;">'+b.label+'</div>';
-      html+='<div style="font-size:0.58rem;color:var(--b3);">Estimado: '+formatCOP(b.anticipoTeorico)+'</div>';
-      html+='<div style="display:flex;align-items:center;gap:0.3rem;margin-top:0.3rem;">';
-      html+='<input type="text" id="trib-ant-'+who+'-'+b.bim+'" placeholder="$ 0"';
-      html+=' value="'+(b.anticipoPagado>0?b.anticipoPagado.toLocaleString('es-CO'):'')+'"';
-      html+=' oninput="saveTribInput(\"'+who+'\",'+tribYear+','+b.bim+')"';
-      html+=' style="flex:1;font-family:var(--ff-m);font-size:0.65rem;background:var(--b8);border:1px solid var(--b5);border-radius:5px;color:var(--wh);padding:0.25rem 0.4rem;outline:none;min-width:0;" />';
+      var bimColor=pagado?(diff>=0?'var(--green-ui)':'var(--acc)'):'var(--b5)';
+      var checkIcon=pagado?(diff>=0?'✓':'~'):'';
+      html+='<div style="background:var(--b7);border:1px solid '+(pagado?bimColor:'var(--b6)')+';border-radius:8px;padding:0.45rem 0.5rem;">';
+      html+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.2rem;">';
+      html+='<span style="font-size:0.54rem;color:var(--b2);">'+b.label+'</span>';
+      html+='<span style="font-size:0.6rem;color:'+bimColor+';">'+checkIcon+'</span>';
       html+='</div>';
-      if(b.anticipoPagado>0){
-        html+='<div style="font-size:0.55rem;color:'+diffCol+';margin-top:0.2rem;">'+(diff>=0?'▲ Exceso ':'▼ Falta ')+formatCOP(Math.abs(diff))+'</div>';
+      html+='<div style="font-size:0.56rem;color:var(--b3);margin-bottom:0.25rem;">Sugerido: <strong style="color:var(--b1);">'+formatCOP(b.anticipoTeorico)+'</strong></div>';
+      html+='<input type="text" id="trib-ant-'+who+'-'+b.bim+'" placeholder="0"';
+      html+=' value="'+(b.anticipoPagado>0?b.anticipoPagado.toLocaleString('es-CO'):'')+'"';
+      html+=' onblur="saveTribInput(\"'+who+'\",'+tribYear+','+b.bim+')"';
+      html+=' style="width:100%;font-family:var(--ff-m);font-size:0.65rem;background:var(--b8);border:1px solid var(--b5);border-radius:5px;color:var(--wh);padding:0.22rem 0.4rem;outline:none;box-sizing:border-box;" />';
+      if(pagado&&diff!==0){
+        html+='<div style="font-size:0.52rem;color:'+(diff>0?'var(--green-ui)':'var(--c-turno)')+';margin-top:0.18rem;">'+(diff>0?'Exceso ':'Falta ')+formatCOP(Math.abs(diff))+'</div>';
       }
       html+='</div>';
     });
-    html+='</div></div>';
+    html+='</div>';
+    html+='</div>'; // end card
   });
 
   document.getElementById('trib-anticipos-section').innerHTML=html;
 
-  // Tarifa table reference
-  var tblHtml='<div style="background:var(--b8);border:1px solid var(--b6);border-radius:12px;padding:1rem 1.2rem;margin-bottom:1rem;">';
-  tblHtml+='<div style="font-size:0.55rem;text-transform:uppercase;letter-spacing:0.07em;color:var(--b3);margin-bottom:0.6rem;font-weight:600;">Tabla de tarifas SIMPLE '+tribYear+' — Profesiones liberales (Art. 908 ET)</div>';
-  tblHtml+='<table style="width:100%;border-collapse:collapse;font-size:0.65rem;">';
-  tblHtml+='<tr style="border-bottom:1px solid var(--b6);"><th style="text-align:left;color:var(--b2);padding:0.3rem 0.5rem;">Rango ingresos</th><th style="text-align:right;color:var(--b2);padding:0.3rem 0.5rem;">En pesos ('+tribYear+')</th><th style="text-align:right;color:var(--b2);padding:0.3rem 0.5rem;">Tarifa</th></tr>';
-  SIMPLE_TARIFAS.forEach(function(t){
-    var minP=formatCOP(t.min*uvt);
-    var maxP=t.max>=100000?'Sin límite':formatCOP(t.max*uvt);
-    tblHtml+='<tr style="border-bottom:1px solid var(--b7);"><td style="padding:0.3rem 0.5rem;color:var(--b1)">'+t.label+'</td>';
-    tblHtml+='<td style="padding:0.3rem 0.5rem;text-align:right;color:var(--b3);font-size:0.58rem">'+minP+' -- '+maxP+'</td>';
-    tblHtml+='<td style="padding:0.3rem 0.5rem;text-align:right;font-family:var(--ff-m);color:var(--acc)">'+(t.tasa*100).toFixed(1)+'%</td></tr>';
-  });
-  tblHtml+='</table>';
-  tblHtml+='<div style="font-size:0.52rem;color:var(--b3);margin-top:0.4rem;">UVT '+tribYear+': '+formatCOP(uvt)+' · Sentencia C-540/2023 revivió tarifas Ley 2155/2021</div>';
-  tblHtml+='</div>';
-  // UVT editor
-  var uvtHtml='<div style="background:var(--b8);border:1px solid var(--b6);border-radius:12px;padding:0.8rem 1.2rem;margin-bottom:1rem;display:flex;align-items:center;gap:1rem;flex-wrap:wrap;">';
-  uvtHtml+='<span style="font-size:0.58rem;text-transform:uppercase;letter-spacing:0.07em;color:var(--b3);font-weight:600;">UVT '+tribYear+'</span>';
+  // UVT editor compacto
+  var uvtHtml='<div style="background:var(--b8);border:1px solid var(--b6);border-radius:10px;padding:0.7rem 1rem;margin-bottom:0.8rem;display:flex;align-items:center;gap:0.8rem;flex-wrap:wrap;">';
+  uvtHtml+='<span style="font-size:0.56rem;text-transform:uppercase;letter-spacing:0.07em;color:var(--b3);font-weight:600;">UVT '+tribYear+'</span>';
   uvtHtml+='<input type="text" id="uvt-input-'+tribYear+'" value="'+getUVT(tribYear).toLocaleString('es-CO')+'"';
-  uvtHtml+=' oninput="saveUVT('+tribYear+',parseCOP(this.value))"';
-  uvtHtml+=' style="font-family:var(--ff-m);font-size:0.78rem;background:var(--b7);border:1px solid var(--b5);border-radius:6px;color:var(--wh);padding:0.3rem 0.6rem;outline:none;width:110px;" />';
-  uvtHtml+='<span style="font-size:0.58rem;color:var(--b3);">Resolución DIAN · ajustar si cambia</span>';
+  uvtHtml+=' onblur="saveUVT('+tribYear+',parseCOP(this.value))"';
+  uvtHtml+=' style="font-family:var(--ff-m);font-size:0.75rem;background:var(--b7);border:1px solid var(--b5);border-radius:6px;color:var(--wh);padding:0.28rem 0.5rem;outline:none;width:90px;" />';
+  uvtHtml+='<span style="font-size:0.56rem;color:var(--b3);">Sentencia C-540/2023 · ajustar si la DIAN actualiza</span>';
   uvtHtml+='</div>';
-  tblHtml=uvtHtml+tblHtml;
-
-  document.getElementById('trib-tarifa-section').innerHTML=tblHtml;
+  document.getElementById('trib-tarifa-section').innerHTML=uvtHtml;
+  document.getElementById('trib-tabla-section').innerHTML='';
 }
 
 // ── CAGR & FINANZAS RENDER ─────────────────────────────────────────────────
