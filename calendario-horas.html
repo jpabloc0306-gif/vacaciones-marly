@@ -828,9 +828,10 @@ function loadBillingInputs(){
     var bEl=document.getElementById('bill-'+who);
     var pEl=document.getElementById('pma-'+who);
     var xEl=document.getElementById('extra-'+who);
-    if(bEl&&salas>0)bEl.value=salas.toLocaleString('es-CO');
-    if(pEl)pEl.value=pma||'';
-    if(xEl&&extra>0)xEl.value=extra.toLocaleString('es-CO');
+    // Always clear first to avoid showing previous month's values
+    if(bEl)bEl.value=salas>0?salas.toLocaleString('es-CO'):'';
+    if(pEl)pEl.value=pma>0?pma:'';
+    if(xEl)xEl.value=extra>0?extra.toLocaleString('es-CO'):'';
     updateVHr(who);
   });
 }
@@ -865,16 +866,6 @@ function initBillingVisibility(){
   ['cas','gar'].forEach(function(who){
     var wrap=document.getElementById('billing-wrap-'+who);
     if(wrap&&!billingVisible[who])wrap.classList.add('billing-hidden');
-  });
-}
-
-function loadBillingInputs(){
-  ['cas','gar'].forEach(function(who){
-    var salas=getBilling(who);
-    document.getElementById('bill-'+who).value=salas>0?salas.toLocaleString('es-CO'):'';
-    var pmaEl=document.getElementById('pma-'+who);
-    if(pmaEl){var p=getPMA(who);pmaEl.value=p>0?p:''}
-    updateVHr(who);
   });
 }
 
