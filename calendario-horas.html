@@ -1371,7 +1371,7 @@ function renderAnual(){
     +(prevJuntos?deltaStr(juntos,prevJuntos)+'<span style="font-size:0.55rem;color:var(--b3)"> vs '+prevYear+'</span>':'')+'</div>';
 
   // Comparacion trimestral
-  var qLabels=['Q1 Ene–Mar','Q2 Abr–Jun','Q3 Jul–Sep','Q4 Oct–Dic'];
+  var qLabels=['Q1 Ene--Mar','Q2 Abr--Jun','Q3 Jul--Sep','Q4 Oct--Dic'];
   var trimHtml='';
   for(var qi=0;qi<4;qi++){
     var hasCurQ=trimCas[qi]>SALARIO_BASE*3;
@@ -1523,10 +1523,10 @@ var tribYear = new Date().getFullYear();
 // Tarifas SIMPLE profesiones liberales (Grupo 5 revivido Sentencia C-540/2023)
 // Aplica para médicos - Art 908 ET
 var SIMPLE_TARIFAS = [
-  {min:0,      max:6000,   tasa:0.059, label:'0 – 6.000 UVT'},
-  {min:6000,   max:15000,  tasa:0.073, label:'6.000 – 15.000 UVT'},
-  {min:15000,  max:30000,  tasa:0.12,  label:'15.000 – 30.000 UVT'},
-  {min:30000,  max:100000, tasa:0.145, label:'30.000 – 100.000 UVT'},
+  {min:0,      max:6000,   tasa:0.059, label:'0 -- 6.000 UVT'},
+  {min:6000,   max:15000,  tasa:0.073, label:'6.000 -- 15.000 UVT'},
+  {min:15000,  max:30000,  tasa:0.12,  label:'15.000 -- 30.000 UVT'},
+  {min:30000,  max:100000, tasa:0.145, label:'30.000 -- 100.000 UVT'},
 ];
 var UVT_DEFAULT = {2024:47065, 2025:49799, 2026:52374, 2027:55000};
 function getUVT(y){
@@ -1602,7 +1602,7 @@ function getTribIngresos(who,year){
 }
 
 // Bimestres: [Jan-Feb, Mar-Apr, May-Jun, Jul-Aug, Sep-Oct, Nov-Dec]
-var BIM_LABELS=['Ene–Feb','Mar–Abr','May–Jun','Jul–Ago','Sep–Oct','Nov–Dic'];
+var BIM_LABELS=['Ene--Feb','Mar--Abr','May--Jun','Jul--Ago','Sep--Oct','Nov--Dic'];
 var BIM_MONTHS=[[1,2],[3,4],[5,6],[7,8],[9,10],[11,12]];
 
 function calcTribBimestral(who,year){
@@ -1708,7 +1708,7 @@ function renderTrib(){
     var minP=formatCOP(t.min*uvt);
     var maxP=t.max>=100000?'Sin límite':formatCOP(t.max*uvt);
     tblHtml+='<tr style="border-bottom:1px solid var(--b7);"><td style="padding:0.3rem 0.5rem;color:var(--b1)">'+t.label+'</td>';
-    tblHtml+='<td style="padding:0.3rem 0.5rem;text-align:right;color:var(--b3);font-size:0.58rem">'+minP+' – '+maxP+'</td>';
+    tblHtml+='<td style="padding:0.3rem 0.5rem;text-align:right;color:var(--b3);font-size:0.58rem">'+minP+' -- '+maxP+'</td>';
     tblHtml+='<td style="padding:0.3rem 0.5rem;text-align:right;font-family:var(--ff-m);color:var(--acc)">'+(t.tasa*100).toFixed(1)+'%</td></tr>';
   });
   tblHtml+='</table>';
