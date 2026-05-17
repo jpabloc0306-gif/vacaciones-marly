@@ -44,9 +44,9 @@ body{font-family:var(--ff-b);background:var(--b9);color:var(--wh);min-height:100
 .mn-label{font-family:var(--ff-d);font-size:0.95rem;font-weight:700;min-width:150px;text-align:center;}
 /* TABS */
 .tabs{display:flex;gap:0;border-bottom:1px solid var(--b6);background:var(--b8);position:sticky;top:37px;z-index:49;}
-.tab-btn{font-family:var(--ff-d);font-size:0.75rem;font-weight:700;padding:0.65rem 1.4rem;border:none;background:transparent;color:var(--wh);cursor:pointer;border-bottom:2px solid transparent;transition:all 0.15s;letter-spacing:0.04em;opacity:0.55;}
-.tab-btn:hover{color:var(--wh);opacity:1;}
-.tab-btn.active{color:var(--wh);border-bottom-color:var(--acc);opacity:1;}
+.tab-btn{font-family:var(--ff-d);font-size:0.75rem;font-weight:700;padding:0.65rem 1.4rem;border:none;background:transparent;color:var(--b2);cursor:pointer;border-bottom:2px solid transparent;transition:all 0.15s;letter-spacing:0.04em;}
+.tab-btn:hover{color:var(--wh);}
+.tab-btn.active{color:var(--wh);border-bottom-color:var(--acc);}
 .tab-btn.fin-tab{position:relative;}
 .tab-btn.fin-tab .lock-dot{display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--b3);margin-left:5px;vertical-align:middle;transition:background 0.3s;}
 .tab-btn.fin-tab.unlocked .lock-dot{background:var(--green-ui);}
@@ -571,7 +571,6 @@ border:1.5px solid transparent;}
       <!-- HIST INGRESOS -->
       <div id="hist-section"></div>
       <!-- Billing panels moved here -->
-      <div class="fin-billing" id="fin-billing"></div>
     </div>
   </div>
 </div><!-- end tab-fin -->
@@ -1868,53 +1867,76 @@ function cagrInterp(r){
 }
 
 function renderFinanzas(){
-  // CAGR cards
+  var nowM=new Date().getMonth()+1;
+  var nowY=new Date().getFullYear();
+
+  // ── Calcular 2026 acumulado + proyeccion
+  loadAllMonths(2026);
+  var acum2026=0;
+  for(var m=1;m<=nowM;m++){
+    acum2026+=getMonthIncome('cas',2026,m)+getMonthIncome('gar',2026,m);
+  }
+  acum2026+=getBolsaTotalForTrib(2026);
+  var proy2026=nowM>0?Math.round(acum2026/nowM*12):0;
+  var fin2025=590379570; // base para CAGR
+
+  // ── Tabla historica con 2026
+  var histRows=HIST_INGRESOS.slice();
+  // Agregar 2026 dinamicamente
+  histRows.push({year:2026, total:acum2026, proy:proy2026, mes:nowM, obs:'En curso'});
+
+  // ── CAGR dinamico incluyendo 2026 proyectado
+  var cagrDinamico=[
+    {label:'CAGR Total (2021→2025)', years:4, ini:252185000, fin:fin2025, fixed:true},
+    {label:'CAGR 3 años (2022→2025)', years:3, ini:246016000, fin:fin2025, fixed:true},
+    {label:'CAGR 1 año (2024→2025)', years:1, ini:511433122, fin:fin2025, fixed:true},
+  ];
+  if(proy2026>0){
+    cagrDinamico.push({label:'CAGR 1 año (2025→2026 proy.)', years:1, ini:fin2025, fin:proy2026, fixed:false});
+    if(nowY>=2026){
+      cagrDinamico.push({label:'CAGR Total (2021→2026 proy.)', years:5, ini:252185000, fin:proy2026, fixed:false});
+    }
+  }
+
+  // ── Render CAGR cards
   var cagrHtml='<div style="margin-bottom:0.7rem;font-size:0.6rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--b3);font-weight:600;">Tasa de crecimiento anual compuesto</div><div class="cagr-grid">';
-  CAGR_DATA.forEach(function(d){
+  cagrDinamico.forEach(function(d){
     var r=calcCAGR(d.ini,d.fin,d.years);
-    cagrHtml+='<div class="cagr-card"><div class="cagr-label">'+d.label+'</div>'
-      +'<div class="cagr-val">'+(r*100).toFixed(1)+'%</div>'
+    var isProy=!d.fixed;
+    cagrHtml+='<div class="cagr-card" style="'+(isProy?'border:1px solid rgba(245,200,66,0.3);':'')+'">'
+      +'<div class="cagr-label">'+d.label+(isProy?' <span style="color:var(--acc);font-size:0.48rem;">PROYECTADO</span>':'')+'</div>'
+      +'<div class="cagr-val" style="'+(isProy?'color:var(--acc);opacity:0.85;':'')+'">'+(r*100).toFixed(1)+'%</div>'
       +'<div class="cagr-interp">'+cagrInterp(r)+'</div></div>';
   });
   cagrHtml+='</div>';
   document.getElementById('cagr-section').innerHTML=cagrHtml;
 
-  // Historial ingresos
+  // ── Render tabla historica
   var histHtml='<div style="margin-bottom:0.7rem;font-size:0.6rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--b3);font-weight:600;">Ingresos anuales historicos</div>';
   histHtml+='<div class="hist-table-wrap"><table class="hist-table"><thead><tr><th>Año</th><th>Ingreso total</th><th>Variacion</th><th>Observacion</th></tr></thead><tbody>';
-  HIST_INGRESOS.forEach(function(d,i){
-    var prev=i>0?HIST_INGRESOS[i-1].total:null;
-    var varPct=prev?((d.total-prev)/prev*100):null;
+  histRows.forEach(function(d,i){
+    var prev=i>0?histRows[i-1].total:null;
+    // Para 2026 comparar proyeccion vs 2025
+    var curTotal=d.proy||d.total;
+    var varPct=prev?((curTotal-prev)/prev*100):null;
     var varStr=varPct!==null?(varPct>=0?'+':'')+varPct.toFixed(1)+'%':'—';
     var varCls=varPct!==null?(varPct>0?'up':'down'):'';
-    histHtml+='<tr><td>'+d.year+'</td><td>'+formatCOP(d.total)+'</td>'
-      +'<td class="'+varCls+'">'+varStr+'</td><td style="font-family:var(--ff-b);color:var(--b3);font-size:0.65rem;">'+d.obs+'</td></tr>';
+    var isCur=d.proy!==undefined;
+    histHtml+='<tr style="'+(isCur?'background:rgba(245,200,66,0.04);':'')+'">'
+      +'<td style="'+(isCur?'color:var(--acc);font-weight:600;':'')+'">'+d.year+(isCur?' ★':'')+'</td>'
+      +'<td>';
+    if(isCur){
+      histHtml+='<div style="font-family:var(--ff-m);font-size:0.7rem;color:var(--b1);">'+formatCOP(d.total)+'</div>';
+      histHtml+='<div style="font-size:0.56rem;color:var(--acc);">→ '+formatCOP(d.proy)+' proy. ('+d.mes+'/12 meses)</div>';
+    } else {
+      histHtml+=formatCOP(d.total);
+    }
+    histHtml+='</td>'
+      +'<td class="'+varCls+'">'+varStr+'</td>'
+      +'<td style="font-family:var(--ff-b);color:var(--b3);font-size:0.65rem;">'+d.obs+'</td></tr>';
   });
   histHtml+='</tbody></table></div>';
   document.getElementById('hist-section').innerHTML=histHtml;
-
-  // Billing summary (read-only from stored values)
-  var billingHtml='<div style="margin-bottom:0.7rem;font-size:0.6rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--b3);font-weight:600;">Facturacion — '+MESES[curMonth]+' '+curYear+'</div><div class="fin-billing">';
-  ['cas','gar'].forEach(function(who){
-    var name=who==='cas'?'Castaneda':'Garcia';
-    var cls=who;
-    var salas=getBilling(who);
-    var pma=getPMA(who)*PMA_CASO;
-    var total=SALARIO_BASE+salas+pma;
-    var hrsEl=document.getElementById('hrs-'+who);
-    var hrs=hrsEl?parseFloat(hrsEl.textContent)||0:0;
-    var vhr=hrs>0?total/hrs:0;
-    billingHtml+='<div class="fin-panel">'
-      +'<div class="fin-panel-name '+cls+'">'+name+'</div>'
-      +'<div class="stat-item" style="padding:0.3rem 0;border-bottom:1px solid var(--b7);"><div class="sl">Salas</div><div class="sv">'+formatCOP(salas)+'</div></div>'
-      +'<div class="stat-item" style="padding:0.3rem 0;border-bottom:1px solid var(--b7);"><div class="sl">PMA ('+getPMA(who)+' casos)</div><div class="sv">'+formatCOP(pma)+'</div></div>'
-      +'<div class="stat-item" style="padding:0.3rem 0;border-bottom:1px solid var(--b7);"><div class="sl">Base</div><div class="sv">'+formatCOP(SALARIO_BASE)+'</div></div>'
-      +'<div class="stat-item" style="padding:0.4rem 0;"><div class="sl">Total mes</div><div style="font-family:var(--ff-m);font-size:0.95rem;color:var(--green-ui);">'+formatCOP(total)+'</div></div>'
-      +'<div style="font-size:0.65rem;color:var(--b3);">'+(vhr>0?formatCOP(vhr)+' / hora':'—')+'</div>'
-      +'</div>';
-  });
-  billingHtml+='</div>';
-  document.getElementById('fin-billing').innerHTML=billingHtml;
 }
 
 
