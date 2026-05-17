@@ -371,7 +371,7 @@ border:1.5px solid transparent;}
         <div class="billing-row">
           <div class="billing-field">
             <div class="billing-label">Salas (COP)</div>
-            <input class="billing-input" id="bill-cas" type="text" placeholder="$ 0" oninput="calcBilling('cas')" />
+            <input class="billing-input" id="bill-cas" type="text" placeholder="$ 0" oninput="calcBilling('cas');fmtField(this)" />
           </div>
           <div class="billing-field">
             <div class="billing-label">Casos PMA</div>
@@ -385,29 +385,32 @@ border:1.5px solid transparent;}
         <div class="extras-row">
           <span class="extras-label">Ingresos extra</span>
           <input class="billing-input" id="extra-cas" type="text" placeholder="$ 0"
-            oninput="calcBilling('cas')"
+            oninput="calcBilling('cas');fmtField(this)"
             style="flex:1;min-width:0;" />
-          <span class="extras-total" id="extra-total-cas"></span>
-        </div>
-        <div class="total-box">
-          <div>
-            <div class="tb-label">Total mes</div>
-            <div class="tb-sub" id="desglose-cas"></div>
-          </div>
-          <div class="tb-val" id="total-cas">—</div>
-        </div>
-      </div>
-      <button class="btn-export" onclick="exportarICS('cas')">Exportar al calendario (.ics)</button>
+
+```
     </div>
-    <div class="stat-row" id="stats-cas"></div>
-    <div class="cal-wrap">
-      <div class="cal-dh-row">
-        <div class="cal-dh">L</div><div class="cal-dh">M</div><div class="cal-dh">X</div>
-        <div class="cal-dh">J</div><div class="cal-dh">V</div>
-        <div class="cal-dh fds">S</div><div class="cal-dh fds">D</div>
+    <div class="total-box">
+      <div>
+        <div class="tb-label">Total mes</div>
+        <div class="tb-sub" id="desglose-cas"></div>
       </div>
-      <div class="cal-grid" id="grid-cas"></div>
+      <div class="tb-val" id="total-cas">—</div>
     </div>
+  </div>
+  <button class="btn-export" onclick="exportarICS('cas')">Exportar al calendario (.ics)</button>
+</div>
+<div class="stat-row" id="stats-cas"></div>
+<div class="cal-wrap">
+  <div class="cal-dh-row">
+    <div class="cal-dh">L</div><div class="cal-dh">M</div><div class="cal-dh">X</div>
+    <div class="cal-dh">J</div><div class="cal-dh">V</div>
+    <div class="cal-dh fds">S</div><div class="cal-dh fds">D</div>
+  </div>
+  <div class="cal-grid" id="grid-cas"></div>
+</div>
+```
+
   </div>
 
   <div class="panel">
@@ -427,7 +430,7 @@ border:1.5px solid transparent;}
         <div class="billing-row">
           <div class="billing-field">
             <div class="billing-label">Salas (COP)</div>
-            <input class="billing-input" id="bill-gar" type="text" placeholder="$ 0" oninput="calcBilling('gar')" />
+            <input class="billing-input" id="bill-gar" type="text" placeholder="$ 0" oninput="calcBilling('gar');fmtField(this)" />
           </div>
           <div class="billing-field">
             <div class="billing-label">Casos PMA</div>
@@ -441,29 +444,32 @@ border:1.5px solid transparent;}
         <div class="extras-row">
           <span class="extras-label">Ingresos extra</span>
           <input class="billing-input" id="extra-gar" type="text" placeholder="$ 0"
-            oninput="calcBilling('gar')"
+            oninput="calcBilling('gar');fmtField(this)"
             style="flex:1;min-width:0;" />
-          <span class="extras-total" id="extra-total-gar"></span>
-        </div>
-        <div class="total-box">
-          <div>
-            <div class="tb-label">Total mes</div>
-            <div class="tb-sub" id="desglose-gar"></div>
-          </div>
-          <div class="tb-val" id="total-gar">—</div>
-        </div>
-      </div>
-      <button class="btn-export" onclick="exportarICS('gar')">Exportar al calendario (.ics)</button>
+
+```
     </div>
-    <div class="stat-row" id="stats-gar"></div>
-    <div class="cal-wrap">
-      <div class="cal-dh-row">
-        <div class="cal-dh">L</div><div class="cal-dh">M</div><div class="cal-dh">X</div>
-        <div class="cal-dh">J</div><div class="cal-dh">V</div>
-        <div class="cal-dh fds">S</div><div class="cal-dh fds">D</div>
+    <div class="total-box">
+      <div>
+        <div class="tb-label">Total mes</div>
+        <div class="tb-sub" id="desglose-gar"></div>
       </div>
-      <div class="cal-grid" id="grid-gar"></div>
+      <div class="tb-val" id="total-gar">—</div>
     </div>
+  </div>
+  <button class="btn-export" onclick="exportarICS('gar')">Exportar al calendario (.ics)</button>
+</div>
+<div class="stat-row" id="stats-gar"></div>
+<div class="cal-wrap">
+  <div class="cal-dh-row">
+    <div class="cal-dh">L</div><div class="cal-dh">M</div><div class="cal-dh">X</div>
+    <div class="cal-dh">J</div><div class="cal-dh">V</div>
+    <div class="cal-dh fds">S</div><div class="cal-dh fds">D</div>
+  </div>
+  <div class="cal-grid" id="grid-gar"></div>
+</div>
+```
+
   </div>
 </div>
 </div><!-- end tab-cal -->
@@ -781,6 +787,16 @@ function getPMA(who){return memStore[pk(who)]||0;}
 function saveExtra(who,val){memStore[xk(who)]=val;try{localStorage.setItem('marly-'+xk(who),String(val));}catch(e){}fsSync();}
 function getExtra(who){return memStore[xk(who)]||0;}
 function loadExtra(who){try{var v=localStorage.getItem('marly-'+xk(who));if(v)memStore[xk(who)]=parseFloat(v)||0;}catch(e){}}
+function fmtField(el){
+  var raw=parseCOP(el.value);
+  if(raw>0){
+    var pos=el.selectionStart,oldLen=el.value.length;
+    el.value=raw.toLocaleString('es-CO');
+    // restore cursor approximately
+    var diff=el.value.length-oldLen;
+    try{el.setSelectionRange(pos+diff,pos+diff);}catch(e){}
+  }
+}
 function parseCOP(v){
   if(!v)return 0;
   var s=String(v).trim();
@@ -856,7 +872,7 @@ function updateVHr(who){
   var telEl=document.getElementById('total-'+who);
   var desEl=document.getElementById('desglose-'+who);
   var vhrEl=document.getElementById('vhr-'+who);
-  var extEl=document.getElementById('extra-total-'+who);
+  var extEl=null; // removed duplicate display
   if(telEl)telEl.textContent=formatCOP(total);
   if(desEl)desEl.textContent='Base '+formatCOP(SALARIO_BASE)+' + Salas '+formatCOP(salas)+' + PMA '+formatCOP(pma)+(extra?' + Extra '+formatCOP(extra):'');
   if(vhrEl)vhrEl.textContent=(totalClinica>0&&hrs>0)?formatCOP(totalClinica/hrs)+' / h':'—';
