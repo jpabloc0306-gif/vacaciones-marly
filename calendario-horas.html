@@ -1830,7 +1830,11 @@ function fsSaveAll(){
   }).then(function(r){
     var dot=document.getElementById('sdot'),lbl=document.getElementById('slabel');
     if(r.ok){dot.className='sdot ok';lbl.textContent='Datos guardados en la nube';}
-    else{dot.className='sdot err';lbl.textContent='Error al guardar';}
+    else{r.text().then(function(t){
+      var msg='Error '+r.status+': ';
+      try{var j=JSON.parse(t);if(j.error&&j.error.message)msg+=j.error.message.slice(0,120);}catch(e){msg+=t.slice(0,120);}
+      dot.className='sdot err';lbl.textContent=msg;
+    });}
   }).catch(function(){
     var dot=document.getElementById('sdot'),lbl=document.getElementById('slabel');
     dot.className='sdot err';lbl.textContent='Sin conexion — guardado local';
