@@ -101,9 +101,6 @@ body{font-family:var(--ff-b);background:var(--b9);color:var(--wh);min-height:100
 .billing-result{background:var(–b7);border:1px solid var(–b6);border-radius:6px;padding:0.34rem 0.6rem;flex:1;min-width:100px;}
 .br-label{font-size:0.52rem;color:var(–b2);text-transform:uppercase;letter-spacing:0.06em;}
 .br-val{font-family:var(–ff-m);font-size:0.78rem;color:var(–green-ui);}
-.extras-row{display:flex;align-items:center;gap:0.5rem;margin-top:0.4rem;padding-top:0.4rem;border-top:1px solid var(–b6);}
-.extras-label{font-size:0.54rem;color:var(–b2);text-transform:uppercase;letter-spacing:0.06em;white-space:nowrap;}
-.extras-total{font-family:var(–ff-m);font-size:0.72rem;color:var(–green-ui);margin-left:auto;white-space:nowrap;}
 .billing-toggle{display:flex;align-items:center;justify-content:space-between;margin-bottom:0.3rem;}
 .billing-toggle-label{font-size:0.54rem;color:var(–b2);text-transform:uppercase;letter-spacing:0.06em;}
 .eye-btn{background:none;border:none;cursor:pointer;color:var(–b3);font-size:0.85rem;padding:0.1rem 0.3rem;border-radius:4px;transition:color 0.15s;line-height:1;}
@@ -339,7 +336,6 @@ border:1.5px solid transparent;}
   <button class="tab-btn active" id="tab-btn-cal" onclick="switchTab('cal')">Calendario</button>
   <button class="tab-btn" id="tab-btn-anual" onclick="switchTab('anual')">Resumen anual</button>
   <button class="tab-btn fin-tab" id="tab-fin-btn" onclick="tryFinanzas()">Finanzas <span class="lock-dot"></span></button>
-  <button class="tab-btn" id="tab-btn-trib" onclick="switchTab('trib')">Tributacion</button>
 </div>
 
 <!-- PIN OVERLAY -->
@@ -381,13 +377,6 @@ border:1.5px solid transparent;}
             <div class="br-label">Valor / hora</div>
             <div class="br-val" id="vhr-cas">—</div>
           </div>
-        </div>
-        <div class="extras-row">
-          <span class="extras-label">Ingresos extra</span>
-          <input class="billing-input" id="extra-cas" type="text" placeholder="$ 0"
-            oninput="calcBilling('cas')"
-            style="flex:1;min-width:0;" />
-          <span class="extras-total" id="extra-total-cas"></span>
         </div>
         <div class="total-box">
           <div>
@@ -437,13 +426,6 @@ border:1.5px solid transparent;}
             <div class="br-label">Valor / hora</div>
             <div class="br-val" id="vhr-gar">—</div>
           </div>
-        </div>
-        <div class="extras-row">
-          <span class="extras-label">Ingresos extra</span>
-          <input class="billing-input" id="extra-gar" type="text" placeholder="$ 0"
-            oninput="calcBilling('gar')"
-            style="flex:1;min-width:0;" />
-          <span class="extras-total" id="extra-total-gar"></span>
         </div>
         <div class="total-box">
           <div>
@@ -549,34 +531,6 @@ border:1.5px solid transparent;}
     </div>
   </div>
 </div><!-- end tab-fin -->
-
-<div class="tab-content" id="tab-trib">
-  <div class="anual-section">
-    <div class="anual-header">
-      <div>
-        <div class="anual-title">Regimen Simple</div>
-        <div class="anual-sub">Proyeccion tributaria · Anticipo bimestral</div>
-      </div>
-      <div style="display:flex;align-items:center;gap:0.5rem;">
-        <button class="ay-btn" onclick="cambiarAnioTrib(-1)">&#8249;</button>
-        <span class="ay-label" id="trib-year-label" style="font-family:var(--ff-d);font-weight:700;font-size:0.9rem;min-width:2.5rem;text-align:center;"></span>
-        <button class="ay-btn" onclick="cambiarAnioTrib(1)">&#8250;</button>
-      </div>
-    </div>
-
-```
-<!-- Anticipos bimestrales registrados -->
-<div id="trib-anticipos-section"></div>
-
-<!-- Tarifa proyectada -->
-<div id="trib-tarifa-section"></div>
-
-<!-- Tabla mensual ingresos -->
-<div id="trib-tabla-section"></div>
-```
-
-  </div>
-</div><!-- end tab-trib -->
 
 <div class="mo" id="mo" onclick="closeModal(event)">
   <div class="mbox" id="mbox"></div>
@@ -775,31 +729,9 @@ var INITIALS={
 var SALARIO_BASE=2058698;
 var PMA_CASO=525000;
 function pk(who){return 'p-'+who+'-'+curYear+'-'+String(curMonth).padStart(2,'0');}
-function xk(who){return 'x-'+who+'-'+curYear+'-'+String(curMonth).padStart(2,'0');}
 function getBilling(who){return memStore[bk(who)]||0;}
 function getPMA(who){return memStore[pk(who)]||0;}
-function saveExtra(who,val){memStore[xk(who)]=val;try{localStorage.setItem('marly-'+xk(who),String(val));}catch(e){}fsSync();}
-function getExtra(who){return memStore[xk(who)]||0;}
-function loadExtra(who){try{var v=localStorage.getItem('marly-'+xk(who));if(v)memStore[xk(who)]=parseFloat(v)||0;}catch(e){}}
-function parseCOP(v){
-  if(!v)return 0;
-  var s=String(v).trim();
-  // Remove $ and spaces
-  s=s.replace(/[$\s]/g,'');
-  // Colombian format: 47.000.000 (dots=thousands) or 47,000.50 (comma=decimal)
-  // If multiple dots, they are thousands separators -> remove them
-  var dots=(s.match(/\./g)||[]).length;
-  var commas=(s.match(/,/g)||[]).length;
-  if(dots>1){s=s.replace(/\./g,'');} // 47.000.000 -> 47000000
-  else if(dots===1&&commas===0){
-    // Could be decimal (47.5) or thousands (47.000) - check digits after dot
-    var parts=s.split('.');
-    if(parts[1]&&parts[1].length===3)s=s.replace('.',''); // thousands
-    // else leave as decimal
-  }
-  s=s.replace(/,/g,''); // remove any remaining commas
-  return parseFloat(s)||0;
-}
+function parseCOP(v){if(!v)return 0;return parseFloat(String(v).replace(/[^0-9.]/g,''))||0;}
 function formatCOP(v){if(!v||v===0)return '$0';return '$'+Math.round(v).toLocaleString('es-CO');}
 function saveBilling(who,val){
   memStore[bk(who)]=val;
@@ -824,13 +756,10 @@ function loadBillingInputs(){
   ['cas','gar'].forEach(function(who){
     var salas=getBilling(who);
     var pma=getPMA(who);
-    var extra=getExtra(who);
     var bEl=document.getElementById('bill-'+who);
     var pEl=document.getElementById('pma-'+who);
-    var xEl=document.getElementById('extra-'+who);
     if(bEl&&salas>0)bEl.value=salas.toLocaleString('es-CO');
     if(pEl)pEl.value=pma||'';
-    if(xEl&&extra>0)xEl.value=extra.toLocaleString('es-CO');
     updateVHr(who);
   });
 }
@@ -840,8 +769,6 @@ function calcBilling(who){
   var pmaEl=document.getElementById('pma-'+who);
   var pmaVal=parseInt(pmaEl?pmaEl.value:0)||0;
   savePMA(who,pmaVal);
-  var extraEl=document.getElementById('extra-'+who);
-  if(extraEl)saveExtra(who,parseCOP(extraEl.value));
   updateVHr(who);
 }
 function updateVHr(who){
@@ -849,17 +776,13 @@ function updateVHr(who){
   var hrs=hrsEl?parseFloat(hrsEl.textContent)||0:0;
   var salas=getBilling(who);
   var pma=getPMA(who)*PMA_CASO;
-  var extra=getExtra(who);
-  var totalClinica=SALARIO_BASE+salas+pma;
-  var total=totalClinica+extra;
+  var total=SALARIO_BASE+salas+pma;
   var telEl=document.getElementById('total-'+who);
   var desEl=document.getElementById('desglose-'+who);
   var vhrEl=document.getElementById('vhr-'+who);
-  var extEl=document.getElementById('extra-total-'+who);
   if(telEl)telEl.textContent=formatCOP(total);
-  if(desEl)desEl.textContent='Base '+formatCOP(SALARIO_BASE)+' + Salas '+formatCOP(salas)+' + PMA '+formatCOP(pma)+(extra?' + Extra '+formatCOP(extra):'');
-  if(vhrEl)vhrEl.textContent=(totalClinica>0&&hrs>0)?formatCOP(totalClinica/hrs)+' / h':'—';
-  if(extEl)extEl.textContent=extra>0?formatCOP(extra):'';
+  if(desEl)desEl.textContent='Base '+formatCOP(SALARIO_BASE)+' + Salas '+formatCOP(salas)+' + PMA '+formatCOP(pma);
+  if(vhrEl)vhrEl.textContent=(total>0&&hrs>0)?formatCOP(total/hrs)+' / h':'—';
 }
 function initBillingVisibility(){
   ['cas','gar'].forEach(function(who){
@@ -884,7 +807,7 @@ function cambiarMes(d){
   if(curMonth<1){curMonth=12;curYear--;}
   if(curYear<2026){curYear=2026;curMonth=1;}
   if(curYear>2027){curYear=2027;curMonth=12;}
-  loadEdits('cas');loadEdits('gar');loadBilling('cas');loadBilling('gar');loadPMA('cas');loadPMA('gar');loadExtra('cas');loadExtra('gar');loadUVTs();
+  loadEdits('cas');loadEdits('gar');loadBilling('cas');loadBilling('gar');loadPMA('cas');loadPMA('gar');
   renderAll();
 }
 
@@ -1437,9 +1360,9 @@ function toggleBilling(who){
 var finUnlocked = false;
 
 function switchTab(tab) {
-  var tabs=['tab-cal','tab-anual','tab-fin','tab-trib'];
+  var tabs=['tab-cal','tab-anual','tab-fin'];
   tabs.forEach(function(id){var el=document.getElementById(id);if(el)el.classList.remove('active');});
-  ['tab-btn-cal','tab-btn-anual','tab-fin-btn','tab-btn-trib'].forEach(function(id){var el=document.getElementById(id);if(el)el.classList.remove('active');});
+  ['tab-btn-cal','tab-btn-anual','tab-fin-btn'].forEach(function(id){var el=document.getElementById(id);if(el)el.classList.remove('active');});
   if(tab==='cal'){
     document.getElementById('tab-cal').classList.add('active');
     document.getElementById('tab-btn-cal').classList.add('active');
@@ -1450,10 +1373,6 @@ function switchTab(tab) {
   } else if(tab==='fin'){
     document.getElementById('tab-fin').classList.add('active');
     document.getElementById('tab-fin-btn').classList.add('active');
-  } else if(tab==='trib'){
-    document.getElementById('tab-trib').classList.add('active');
-    document.getElementById('tab-btn-trib').classList.add('active');
-    renderTrib();
   }
 }
 
@@ -1515,216 +1434,6 @@ function initHoldBtn(){
   document.getElementById('pin-overlay').addEventListener('click', function(e){
     if(e.target===this){stopHold();this.style.display='none';}
   });
-}
-
-// ── TRIBUTACION ───────────────────────────────────────────────────────────────
-var tribYear = new Date().getFullYear();
-
-// Tarifas SIMPLE profesiones liberales (Grupo 5 revivido Sentencia C-540/2023)
-// Aplica para médicos - Art 908 ET
-var SIMPLE_TARIFAS = [
-  {min:0,      max:6000,   tasa:0.059, label:'0 – 6.000 UVT'},
-  {min:6000,   max:15000,  tasa:0.073, label:'6.000 – 15.000 UVT'},
-  {min:15000,  max:30000,  tasa:0.12,  label:'15.000 – 30.000 UVT'},
-  {min:30000,  max:100000, tasa:0.145, label:'30.000 – 100.000 UVT'},
-];
-var UVT_DEFAULT = {2024:47065, 2025:49799, 2026:52374, 2027:55000};
-function getUVT(y){
-  var stored=memStore['uvt-'+y];
-  return stored?parseFloat(stored):UVT_DEFAULT[y]||52374;
-}
-function saveUVT(y,val){
-  memStore['uvt-'+y]=val;
-  try{localStorage.setItem('marly-uvt-'+y,String(val));}catch(e){}
-  fsSync();
-  renderTrib();
-}
-function loadUVTs(){
-  [2024,2025,2026,2027].forEach(function(y){
-    try{var v=localStorage.getItem('marly-uvt-'+y);if(v)memStore['uvt-'+y]=parseFloat(v)||0;}catch(e){}
-  });
-}
-
-
-function getTasaSimple(ingresosAnuales, y){
-  var uvt=getUVT(y);
-  var enUVT=ingresosAnuales/uvt;
-  for(var i=0;i<SIMPLE_TARIFAS.length;i++){
-    if(enUVT<SIMPLE_TARIFAS[i].max)return SIMPLE_TARIFAS[i];
-  }
-  return SIMPLE_TARIFAS[SIMPLE_TARIFAS.length-1];
-}
-
-// Key for anticipos pagados: 'trib-ant-who-year-bim' (bim=1..6)
-function tribKey(who,year,bim){return 'trib-'+who+'-'+year+'-b'+bim;}
-function saveTribAnt(who,year,bim,val){
-  memStore[tribKey(who,year,bim)]=val;
-  try{localStorage.setItem('marly-'+tribKey(who,year,bim),String(val));}catch(e){}
-  fsSync();
-}
-function getTribAnt(who,year,bim){return memStore[tribKey(who,year,bim)]||0;}
-function loadTribAnts(year){
-  ['cas','gar'].forEach(function(who){
-    for(var b=1;b<=6;b++){
-      var k=tribKey(who,year,b);
-      try{var v=localStorage.getItem('marly-'+k);if(v)memStore[k]=parseFloat(v)||0;}catch(e){}
-    }
-  });
-}
-
-// Get monthly income for a person in a given year
-function loadAllMonths(year){
-  ['cas','gar'].forEach(function(who){
-    for(var m=1;m<=12;m++){
-      var mm=String(m).padStart(2,'0');
-      [['b','billing'],['p','pma'],['x','extra']].forEach(function(pair){
-        var prefix=pair[0];
-        var fullKey=prefix+'-'+who+'-'+year+'-'+mm;
-        try{
-          var v=localStorage.getItem('marly-'+fullKey);
-          if(v!==null)memStore[fullKey]=parseFloat(v)||0;
-        }catch(e){}
-      });
-    }
-  });
-}
-function getMonthIncome(who,year,month){
-  var mm=String(month).padStart(2,'0');
-  var salas=memStore['b-'+who+'-'+year+'-'+mm]||0;
-  var pma=(memStore['p-'+who+'-'+year+'-'+mm]||0)*PMA_CASO;
-  var extra=memStore['x-'+who+'-'+year+'-'+mm]||0;
-  return SALARIO_BASE+salas+pma+extra;
-}
-function getTribIngresos(who,year){
-  var total=0;
-  for(var m=1;m<=12;m++) total+=getMonthIncome(who,year,m);
-  return total;
-}
-
-// Bimestres: [Jan-Feb, Mar-Apr, May-Jun, Jul-Aug, Sep-Oct, Nov-Dec]
-var BIM_LABELS=['Ene–Feb','Mar–Abr','May–Jun','Jul–Ago','Sep–Oct','Nov–Dic'];
-var BIM_MONTHS=[[1,2],[3,4],[5,6],[7,8],[9,10],[11,12]];
-
-function calcTribBimestral(who,year){
-  // Calculate income per bimestre and projected tax
-  var bims=[];
-  var totalAcum=0;
-  var nowM=new Date().getMonth()+1;
-  var nowY=new Date().getFullYear();
-  for(var b=0;b<6;b++){
-    var months=BIM_MONTHS[b];
-    var ingBim=0;
-    months.forEach(function(m){ingBim+=getMonthIncome(who,year,m);});
-    totalAcum+=ingBim;
-    var tarifa=getTasaSimple(totalAcum*2,year); // annualize to get rate
-    var anticipoTeorico=Math.round(ingBim*tarifa.tasa);
-    var anticipoPagado=getTribAnt(who,year,b+1);
-    var esFuturo=year>nowY||(year===nowY&&months[0]>nowM);
-    bims.push({label:BIM_LABELS[b],ingBim:ingBim,anticipoTeorico:anticipoTeorico,
-               anticipoPagado:anticipoPagado,esFuturo:esFuturo,bim:b+1,tasa:tarifa.tasa});
-  }
-  return bims;
-}
-
-function cambiarAnioTrib(d){
-  tribYear+=d;
-  if(tribYear<2024)tribYear=2024;
-  if(tribYear>2027)tribYear=2027;
-  loadTribAnts(tribYear);
-  renderTrib();
-}
-
-function saveTribInput(who,year,bim){
-  var el=document.getElementById('trib-ant-'+who+'-'+bim);
-  if(el)saveTribAnt(who,year,bim,parseCOP(el.value));
-  renderTrib();
-}
-
-function renderTrib(){
-  document.getElementById('trib-year-label').textContent=tribYear;
-  loadAllMonths(tribYear);
-  loadTribAnts(tribYear);
-
-  var uvt=getUVT(tribYear);
-  var html='';
-
-  ['cas','gar'].forEach(function(who){
-    var name=who==='cas'?'Castaneda':'Garcia';
-    var cls=who;
-    var ingresoAnual=getTribIngresos(who,tribYear);
-    var tarifa=getTasaSimple(ingresoAnual,tribYear);
-    var impuestoTotal=Math.round(ingresoAnual*tarifa.tasa);
-    var bims=calcTribBimestral(who,tribYear);
-    var totalPagado=bims.reduce(function(s,b){return s+(b.anticipoPagado||0);},0);
-    var saldo=impuestoTotal-totalPagado;
-    var enUVT=(ingresoAnual/uvt).toFixed(0);
-
-    // Header card
-    html+='<div style="background:var(--b8);border:1px solid var(--b6);border-radius:12px;padding:1rem 1.2rem;margin-bottom:1rem;">';
-    html+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.8rem;">';
-    html+='<div style="font-family:var(--ff-d);font-size:1rem;font-weight:800;color:'+(who==='cas'?'#7dd3f8':'#fdba84')+'"">'+name+'</div>';
-    html+='<div style="text-align:right;"><div style="font-family:var(--ff-m);font-size:1.1rem;color:var(--green-ui)">'+formatCOP(ingresoAnual)+'</div>';
-    html+='<div style="font-size:0.55rem;color:var(--b2);text-transform:uppercase">Ingresos '+tribYear+' · '+enUVT+' UVT</div></div></div>';
-
-    // Tarifa chip
-    html+='<div style="display:flex;gap:0.5rem;align-items:center;margin-bottom:0.8rem;flex-wrap:wrap;">';
-    html+='<div style="background:var(--b7);border-radius:6px;padding:0.3rem 0.7rem;font-size:0.62rem;color:var(--b1)">Tarifa: <strong style="color:var(--acc)">'+(tarifa.tasa*100).toFixed(1)+'%</strong> ('+tarifa.label+')</div>';
-    html+='<div style="background:var(--b7);border-radius:6px;padding:0.3rem 0.7rem;font-size:0.62rem;color:var(--b1)">Impuesto est.: <strong style="color:var(--c-turno)">'+formatCOP(impuestoTotal)+'</strong></div>';
-    html+='<div style="background:var(--b7);border-radius:6px;padding:0.3rem 0.7rem;font-size:0.62rem;color:var(--b1)">Anticipos pagados: <strong style="color:var(--green-ui)">'+formatCOP(totalPagado)+'</strong></div>';
-    html+='<div style="background:var(--b7);border-radius:6px;padding:0.3rem 0.7rem;font-size:0.62rem;color:var(--b1)">Saldo est.: <strong style="color:'+(saldo>0?'var(--c-turno)':'var(--green-ui)')+'">'+formatCOP(Math.abs(saldo))+(saldo>0?' a pagar':' a favor')+'</strong></div>';
-    html+='</div>';
-
-    // Anticipos bimestrales
-    html+='<div style="font-size:0.55rem;text-transform:uppercase;letter-spacing:0.07em;color:var(--b3);margin-bottom:0.5rem;font-weight:600;">Anticipos bimestrales</div>';
-    html+='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:0.5rem;">';
-    bims.forEach(function(b){
-      var diff=b.anticipoPagado-b.anticipoTeorico;
-      var diffCol=diff>=0?'var(--green-ui)':'var(--c-turno)';
-      html+='<div style="background:var(--b7);border:1px solid var(--b6);border-radius:8px;padding:0.5rem 0.6rem;">';
-      html+='<div style="font-size:0.55rem;color:var(--b2);margin-bottom:0.25rem;">'+b.label+'</div>';
-      html+='<div style="font-size:0.58rem;color:var(--b3);">Estimado: '+formatCOP(b.anticipoTeorico)+'</div>';
-      html+='<div style="display:flex;align-items:center;gap:0.3rem;margin-top:0.3rem;">';
-      html+='<input type="text" id="trib-ant-'+who+'-'+b.bim+'" placeholder="$ 0"';
-      html+=' value="'+(b.anticipoPagado>0?b.anticipoPagado.toLocaleString('es-CO'):'')+'"';
-      html+=' oninput="saveTribInput(\"'+who+'\",'+tribYear+','+b.bim+')"';
-      html+=' style="flex:1;font-family:var(--ff-m);font-size:0.65rem;background:var(--b8);border:1px solid var(--b5);border-radius:5px;color:var(--wh);padding:0.25rem 0.4rem;outline:none;min-width:0;" />';
-      html+='</div>';
-      if(b.anticipoPagado>0){
-        html+='<div style="font-size:0.55rem;color:'+diffCol+';margin-top:0.2rem;">'+(diff>=0?'▲ Exceso ':'▼ Falta ')+formatCOP(Math.abs(diff))+'</div>';
-      }
-      html+='</div>';
-    });
-    html+='</div></div>';
-  });
-
-  document.getElementById('trib-anticipos-section').innerHTML=html;
-
-  // Tarifa table reference
-  var tblHtml='<div style="background:var(--b8);border:1px solid var(--b6);border-radius:12px;padding:1rem 1.2rem;margin-bottom:1rem;">';
-  tblHtml+='<div style="font-size:0.55rem;text-transform:uppercase;letter-spacing:0.07em;color:var(--b3);margin-bottom:0.6rem;font-weight:600;">Tabla de tarifas SIMPLE '+tribYear+' — Profesiones liberales (Art. 908 ET)</div>';
-  tblHtml+='<table style="width:100%;border-collapse:collapse;font-size:0.65rem;">';
-  tblHtml+='<tr style="border-bottom:1px solid var(--b6);"><th style="text-align:left;color:var(--b2);padding:0.3rem 0.5rem;">Rango ingresos</th><th style="text-align:right;color:var(--b2);padding:0.3rem 0.5rem;">En pesos ('+tribYear+')</th><th style="text-align:right;color:var(--b2);padding:0.3rem 0.5rem;">Tarifa</th></tr>';
-  SIMPLE_TARIFAS.forEach(function(t){
-    var minP=formatCOP(t.min*uvt);
-    var maxP=t.max>=100000?'Sin límite':formatCOP(t.max*uvt);
-    tblHtml+='<tr style="border-bottom:1px solid var(--b7);"><td style="padding:0.3rem 0.5rem;color:var(--b1)">'+t.label+'</td>';
-    tblHtml+='<td style="padding:0.3rem 0.5rem;text-align:right;color:var(--b3);font-size:0.58rem">'+minP+' – '+maxP+'</td>';
-    tblHtml+='<td style="padding:0.3rem 0.5rem;text-align:right;font-family:var(--ff-m);color:var(--acc)">'+(t.tasa*100).toFixed(1)+'%</td></tr>';
-  });
-  tblHtml+='</table>';
-  tblHtml+='<div style="font-size:0.52rem;color:var(--b3);margin-top:0.4rem;">UVT '+tribYear+': '+formatCOP(uvt)+' · Sentencia C-540/2023 revivió tarifas Ley 2155/2021</div>';
-  tblHtml+='</div>';
-  // UVT editor
-  var uvtHtml='<div style="background:var(--b8);border:1px solid var(--b6);border-radius:12px;padding:0.8rem 1.2rem;margin-bottom:1rem;display:flex;align-items:center;gap:1rem;flex-wrap:wrap;">';
-  uvtHtml+='<span style="font-size:0.58rem;text-transform:uppercase;letter-spacing:0.07em;color:var(--b3);font-weight:600;">UVT '+tribYear+'</span>';
-  uvtHtml+='<input type="text" id="uvt-input-'+tribYear+'" value="'+getUVT(tribYear).toLocaleString('es-CO')+'"';
-  uvtHtml+=' oninput="saveUVT('+tribYear+',parseCOP(this.value))"';
-  uvtHtml+=' style="font-family:var(--ff-m);font-size:0.78rem;background:var(--b7);border:1px solid var(--b5);border-radius:6px;color:var(--wh);padding:0.3rem 0.6rem;outline:none;width:110px;" />';
-  uvtHtml+='<span style="font-size:0.58rem;color:var(--b3);">Resolución DIAN · ajustar si cambia</span>';
-  uvtHtml+='</div>';
-  tblHtml=uvtHtml+tblHtml;
-
-  document.getElementById('trib-tarifa-section').innerHTML=tblHtml;
 }
 
 // ── CAGR & FINANZAS RENDER ─────────────────────────────────────────────────
@@ -1811,8 +1520,6 @@ function fsSync(){
 }
 
 function fsSaveAll(){
-  // Load all months into memStore before saving so nothing is lost
-  loadAllMonths(2024);loadAllMonths(2025);loadAllMonths(2026);loadAllMonths(2027);
   // Build payload: all memStore keys
   var fields={};
   Object.keys(memStore).forEach(function(k){
@@ -1875,18 +1582,15 @@ function parseVacData(raw){
 }
 
 // Load local cache first (instant)
-loadEdits('cas');loadEdits('gar');loadBilling('cas');loadBilling('gar');loadPMA('cas');loadPMA('gar');loadExtra('cas');loadExtra('gar');loadUVTs();
+loadEdits('cas');loadEdits('gar');loadBilling('cas');loadBilling('gar');loadPMA('cas');loadPMA('gar');
 var sdot=document.getElementById('sdot'),slabel=document.getElementById('slabel');
 sdot.className='sdot';slabel.textContent='Cargando datos...';
-// Load all months from localStorage before first render
-loadAllMonths(2025);loadAllMonths(2026);loadAllMonths(2027);
 // Render calendar immediately with local data so it's not blank
 renderAll();
 
 // Load calendar data from Firestore, then vacaciones
 fsLoadAll(function(){
-  loadEdits('cas');loadEdits('gar');loadBilling('cas');loadBilling('gar');loadPMA('cas');loadPMA('gar');loadExtra('cas');loadExtra('gar');loadUVTs();
-  loadAllMonths(2025);loadAllMonths(2026);loadAllMonths(2027);
+  loadEdits('cas');loadEdits('gar');loadBilling('cas');loadBilling('gar');loadPMA('cas');loadPMA('gar');
   renderAll();
   // Now load vacaciones
   fetch(FIRESTORE_URL)
