@@ -1874,7 +1874,7 @@ function renderFinanzas(){
   loadAllMonths(2026);
   var acum2026=0;
   for(var m=1;m<=nowM;m++){
-    acum2026+=getMonthIncome('cas',2026,m)+getMonthIncome('gar',2026,m);
+    acum2026+=getMonthIncome('cas',2026,m);
   }
   acum2026+=getBolsaTotalForTrib(2026);
   var proy2026=nowM>0?Math.round(acum2026/nowM*12):0;
