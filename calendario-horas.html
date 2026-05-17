@@ -644,7 +644,10 @@ function tipoTag(pos, tipo, dayType){
 
 // ── MOTOR ─────────────────────────────────────────────────────────────────────
 var NAMES=['Leonardo Cendales','Andres Ruiz','Enrique Lopierre','Mauricio Perez','Laura Tobos','Luisa Aguirre','Andres Diaz','JB Silva','Carmen Teresa Mojica','Luis Eduardo Silva','Alexandra Vargas','Maria Jose Cantillo','Juan Manuel Arias','German Gutierrez','Cristian Chamorro','Juan Carlos Tellez','Angela Taborda','Edna Cruz','Luis Fernando Alvarez','Rafael Turriago','Carlos Higuera','Juan Pablo Castaneda','Maria Cecilia Garcia','Jose Luis Pay'];
-var NAME_TO_KEY={'Leonardo Cendales':'Cendales','Andres Ruiz':'Ruiz','Enrique Lopierre':'Lopierre','Mauricio Perez':'Perez','Laura Tobos':'Tobos','Luisa Aguirre':'Aguirre','Andres Diaz':'Diaz','JB Silva':'JB Silva','Carmen Teresa Mojica':'Mojica','Luis Eduardo Silva':'LE Silva','Alexandra Vargas':'Vargas','Maria Jose Cantillo':'Cantillo','Juan Manuel Arias':'Arias','German Gutierrez':'Gutierrez','Cristian Chamorro':'Chamorro','Juan Carlos Tellez':'Tellez','Angela Taborda':'Taborda','Edna Cruz':'Cruz','Luis Fernando Alvarez':'Alvarez','Rafael Turriago':'Turriago','Carlos Higuera':'Higuera','Juan Pablo Castaneda':'Castaneda','Maria Cecilia Garcia':'Garcia','Jose Luis Pay':'Pay'};
+var NAME_TO_KEY={'Leonardo Cendales':'Cendales','Andres Ruiz':'Ruiz','Enrique Lopierre':'Lopierre','Mauricio Perez':'Perez','Laura Tobos':'Tobos','Luisa Aguirre':'Aguirre','Andres Diaz':'Diaz','JB Silva':'JB Silva','Carmen Teresa Mojica':'Mojica','Luis Eduardo Silva':'LE Silva','Alexandra Vargas':'Vargas','Maria Jose Cantillo':'Cantillo','Juan Manuel Arias':'Arias','German Gutierrez':'Gutierrez','Cristian Chamorro':'Chamorro','Juan Carlos Tellez':'Tellez','Angela Taborda':'Taborda','Edna Cruz':'Cruz','Luis Fernando Alvarez':'Alvarez','Rafael Turriago':'Turriago','Carlos Higuera':'Higuera','Juan Pablo Castaneda':'Castaneda','Maria Cecilia Garcia':'Garcia','Jose Luis Pay':'Pay',
+// Con tildes (como aparecen en Firestore)
+'Juan Pablo Castañeda':'Castaneda','María Cecilia García':'Garcia','María Cecilia Garcia':'Garcia','Juan Pablo Castaneda':'Castaneda',
+'Mónica Mojica':'Mojica','Andrés Ruíz':'Ruiz','Andrés Díaz':'Diaz','Édna Cruz':'Cruz','Germán Gutiérrez':'Gutierrez','Rafaël Turriago':'Turriago'};
 var FS_API='AIzaSyBovPvnDU3qJFZAbLENudFX9no3x6h1CaE';
 var FS_BASE='https://firestore.googleapis.com/v1/projects/marly-calendario/databases/(default)/documents';
 var FIRESTORE_URL=FS_BASE+'/vacaciones/datos?key='+FS_API; // vacaciones (mismo formato)
@@ -1754,36 +1757,24 @@ function renderTrib(){
       var pagado=getTribPagado(who,tribYear,b.bim);
       var diff=b.anticipoPagado-b.anticipoTeorico;
       var bimUVT=b.ingBim/uvt;
-      // Posicion del bimestre en el escalon
-      var bimPct=0,bimBarCol='var(--green-ui)';
+      var bimPct=0,bimBarCol='#38bdf8';
       if(bimUVT<1000){bimPct=Math.round(bimUVT/1000*100);bimBarCol='#38bdf8';}
       else if(bimUVT<2500){bimPct=Math.round((bimUVT-1000)/1500*100);bimBarCol='var(--acc)';}
       else{bimPct=Math.min(100,Math.round((bimUVT-2500)/2500*100));bimBarCol='var(--c-turno)';}
-
       var cardBorder=pagado?'var(--green-ui)':'var(--b6)';
       html+='<div style="background:var(--b7);border:1.5px solid '+cardBorder+';border-radius:8px;padding:0.55rem 0.6rem;">';
-      // Fila top: label + checkbox
       html+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.25rem;">';
       html+='<span style="font-size:0.58rem;color:var(--b1);font-weight:600;">'+b.label+'</span>';
-      // Checkbox
-      html+='<button onclick="saveTribPagado(''+who+'','+tribYear+','+b.bim+','+(pagado?'false':'true')+')" ';
-      html+='style="width:20px;height:20px;border-radius:5px;border:2px solid '+(pagado?'var(--green-ui)':'var(--b5)')+';';
-      html+='background:'+(pagado?'var(--green-ui)':'transparent')+';cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.15s;">';
-      html+=(pagado?'<span style="color:#0a0f1a;font-size:0.75rem;font-weight:900;">✓</span>':'');
-      html+='</button>';
+      html+='<button id="trib-cb-'+who+'-'+b.bim+'" data-who="'+who+'" data-year="'+tribYear+'" data-bim="'+b.bim+'" data-v="'+(pagado?1:0)+'"';
+      html+=' style="width:20px;height:20px;border-radius:5px;border:2px solid '+(pagado?'var(--green-ui)':'var(--b5)')+';background:'+(pagado?'var(--green-ui)':'transparent')+';cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;">'+
+        (pagado?'<span style="color:#0a0f1a;font-size:0.75rem;font-weight:900;">&#10003;</span>':'')+'</button>';
       html+='</div>';
-      // Ingresos del bimestre
       html+='<div style="font-family:var(--ff-m);font-size:0.7rem;color:var(--green-ui);margin-bottom:0.18rem;">'+formatCOP(b.ingBim)+'</div>';
-      html+='<div style="font-size:0.52rem;color:var(--b3);margin-bottom:0.3rem;">'+bimUVT.toFixed(0)+' UVT en el bimestre</div>';
-      // Barra bimestre
-      html+='<div style="height:4px;background:var(--b8);border-radius:2px;overflow:hidden;margin-bottom:0.3rem;">';
-      html+='<div style="height:100%;width:'+bimPct+'%;background:'+bimBarCol+';border-radius:2px;"></div>';
-      html+='</div>';
-      // Anticipo sugerido y pagado
+      html+='<div style="font-size:0.52rem;color:var(--b3);margin-bottom:0.28rem;">'+bimUVT.toFixed(0)+' UVT en el bimestre</div>';
+      html+='<div style="height:4px;background:var(--b8);border-radius:2px;overflow:hidden;margin-bottom:0.3rem;"><div style="height:100%;width:'+bimPct+'%;background:'+bimBarCol+';border-radius:2px;"></div></div>';
       html+='<div style="font-size:0.54rem;color:var(--b3);margin-bottom:0.2rem;">Anticipo sugerido: <strong style="color:var(--b1);">'+formatCOP(b.anticipoTeorico)+'</strong></div>';
-      html+='<input type="text" id="trib-ant-'+who+'-'+b.bim+'" placeholder="Monto pagado"';
+      html+='<input type="text" id="trib-ant-'+who+'-'+b.bim+'" data-who="'+who+'" data-year="'+tribYear+'" data-bim="'+b.bim+'" placeholder="Monto pagado"';
       html+=' value="'+(b.anticipoPagado>0?b.anticipoPagado.toLocaleString('es-CO'):'')+'"';
-      html+=' onblur="saveTribInput(''+who+'','+tribYear+','+b.bim+')"';
       html+=' style="width:100%;font-family:var(--ff-m);font-size:0.65rem;background:var(--b8);border:1px solid var(--b5);border-radius:5px;color:var(--wh);padding:0.22rem 0.4rem;outline:none;box-sizing:border-box;" />';
       if(b.anticipoPagado>0&&diff!==0){
         html+='<div style="font-size:0.52rem;color:'+(diff>0?'var(--green-ui)':'var(--c-turno)')+';margin-top:0.15rem;">'+(diff>0?'Exceso: ':'Falta: ')+formatCOP(Math.abs(diff))+'</div>';
@@ -1795,6 +1786,20 @@ function renderTrib(){
   });
 
   document.getElementById('trib-anticipos-section').innerHTML=html;
+  // Event delegation for checkboxes and inputs (avoids inline handler quote issues)
+  document.getElementById('trib-anticipos-section').addEventListener('click',function(e){
+    var btn=e.target.closest('button[data-bim]');
+    if(!btn)return;
+    var w=btn.getAttribute('data-who'),y=parseInt(btn.getAttribute('data-year')),bi=parseInt(btn.getAttribute('data-bim')),v=btn.getAttribute('data-v')==='1';
+    saveTribPagado(w,y,bi,!v);
+  });
+  document.getElementById('trib-anticipos-section').addEventListener('blur',function(e){
+    var inp=e.target;
+    if(!inp.getAttribute('data-bim'))return;
+    var w=inp.getAttribute('data-who'),y=parseInt(inp.getAttribute('data-year')),bi=parseInt(inp.getAttribute('data-bim'));
+    saveTribAnt(w,y,bi,parseCOP(inp.value));
+    renderTrib();
+  },true);
 
   // UVT editor
   var uvtHtml='<div style="background:var(--b8);border:1px solid var(--b6);border-radius:10px;padding:0.7rem 1rem;margin-bottom:0.8rem;display:flex;align-items:center;gap:0.8rem;flex-wrap:wrap;">';
@@ -1953,9 +1958,25 @@ function parseFSV(val){
   if(val.mapValue!==undefined){var o={},f=val.mapValue.fields||{};Object.keys(f).forEach(function(k){o[k]=parseFSV(f[k]);});return o;}
   return null;
 }
+function normalizeNombre(s){
+  // strip accents, lowercase for fuzzy match
+  return s.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().trim();
+}
+var NAME_TO_KEY_NORM={};
+Object.keys(NAME_TO_KEY).forEach(function(k){NAME_TO_KEY_NORM[normalizeNombre(k)]=NAME_TO_KEY[k];});
+
 function parseVacData(raw){
   var r=[];
-  Object.keys(raw).forEach(function(i){var fn=NAMES[parseInt(i)],key=NAME_TO_KEY[fn],vacs=raw[i];if(!key||!Array.isArray(vacs))return;vacs.forEach(function(v){if(v.start&&v.end)r.push({doc:key,desde:v.start,hasta:v.end});});});
+  Object.keys(raw).forEach(function(i){
+    var fn=NAMES[parseInt(i)];
+    // Try exact match first, then normalized
+    var key=NAME_TO_KEY[fn]||NAME_TO_KEY_NORM[normalizeNombre(fn||'')];
+    // Also try if the key itself is a name string (some formats store name as key)
+    if(!key) key=NAME_TO_KEY[i]||NAME_TO_KEY_NORM[normalizeNombre(i)];
+    var vacs=raw[i];
+    if(!key||!Array.isArray(vacs))return;
+    vacs.forEach(function(v){if(v.start&&v.end)r.push({doc:key,desde:v.start,hasta:v.end});});
+  });
   return r;
 }
 
