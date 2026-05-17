@@ -371,7 +371,7 @@ border:1.5px solid transparent;}
         <div class="billing-row">
           <div class="billing-field">
             <div class="billing-label">Salas (COP)</div>
-            <input class="billing-input" id="bill-cas" type="text" placeholder="$ 0" oninput="calcBilling('cas');fmtField(this)" />
+            <input class="billing-input" id="bill-cas" type="text" placeholder="$ 0" oninput="calcBilling('cas')" onblur="fmtFieldBlur(this)" />
           </div>
           <div class="billing-field">
             <div class="billing-label">Casos PMA</div>
@@ -385,7 +385,7 @@ border:1.5px solid transparent;}
         <div class="extras-row">
           <span class="extras-label">Ingresos extra</span>
           <input class="billing-input" id="extra-cas" type="text" placeholder="$ 0"
-            oninput="calcBilling('cas');fmtField(this)"
+            oninput="calcBilling('cas')" onblur="fmtFieldBlur(this)"
             style="flex:1;min-width:0;" />
 
 ```
@@ -398,7 +398,7 @@ border:1.5px solid transparent;}
       <div class="tb-val" id="total-cas">—</div>
     </div>
   </div>
-  <button class="btn-export" onclick="exportarICS('cas')">Exportar al calendario (.ics)</button>
+  
 </div>
 <div class="stat-row" id="stats-cas"></div>
 <div class="cal-wrap">
@@ -430,7 +430,7 @@ border:1.5px solid transparent;}
         <div class="billing-row">
           <div class="billing-field">
             <div class="billing-label">Salas (COP)</div>
-            <input class="billing-input" id="bill-gar" type="text" placeholder="$ 0" oninput="calcBilling('gar');fmtField(this)" />
+            <input class="billing-input" id="bill-gar" type="text" placeholder="$ 0" oninput="calcBilling('gar')" onblur="fmtFieldBlur(this)" />
           </div>
           <div class="billing-field">
             <div class="billing-label">Casos PMA</div>
@@ -444,7 +444,7 @@ border:1.5px solid transparent;}
         <div class="extras-row">
           <span class="extras-label">Ingresos extra</span>
           <input class="billing-input" id="extra-gar" type="text" placeholder="$ 0"
-            oninput="calcBilling('gar');fmtField(this)"
+            oninput="calcBilling('gar')" onblur="fmtFieldBlur(this)"
             style="flex:1;min-width:0;" />
 
 ```
@@ -457,7 +457,7 @@ border:1.5px solid transparent;}
       <div class="tb-val" id="total-gar">—</div>
     </div>
   </div>
-  <button class="btn-export" onclick="exportarICS('gar')">Exportar al calendario (.ics)</button>
+  
 </div>
 <div class="stat-row" id="stats-gar"></div>
 <div class="cal-wrap">
@@ -788,14 +788,12 @@ function saveExtra(who,val){memStore[xk(who)]=val;try{localStorage.setItem('marl
 function getExtra(who){return memStore[xk(who)]||0;}
 function loadExtra(who){try{var v=localStorage.getItem('marly-'+xk(who));if(v)memStore[xk(who)]=parseFloat(v)||0;}catch(e){}}
 function fmtField(el){
+  // Only format on blur, not while typing - prevents deletion bug
+}
+function fmtFieldBlur(el){
   var raw=parseCOP(el.value);
-  if(raw>0){
-    var pos=el.selectionStart,oldLen=el.value.length;
-    el.value=raw.toLocaleString('es-CO');
-    // restore cursor approximately
-    var diff=el.value.length-oldLen;
-    try{el.setSelectionRange(pos+diff,pos+diff);}catch(e){}
-  }
+  if(raw>0) el.value=raw.toLocaleString('es-CO');
+  else el.value='';
 }
 function parseCOP(v){
   if(!v)return 0;
