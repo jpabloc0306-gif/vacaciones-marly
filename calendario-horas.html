@@ -44,9 +44,9 @@ body{font-family:var(--ff-b);background:var(--b9);color:var(--wh);min-height:100
 .mn-label{font-family:var(--ff-d);font-size:0.95rem;font-weight:700;min-width:150px;text-align:center;}
 /* TABS */
 .tabs{display:flex;gap:0;border-bottom:1px solid var(--b6);background:var(--b8);position:sticky;top:37px;z-index:49;}
-.tab-btn{font-family:var(--ff-d);font-size:0.75rem;font-weight:700;padding:0.65rem 1.4rem;border:none;background:transparent;color:var(--b2);cursor:pointer;border-bottom:2px solid transparent;transition:all 0.15s;letter-spacing:0.04em;}
-.tab-btn:hover{color:var(--wh);}
-.tab-btn.active{color:var(--wh);border-bottom-color:var(--acc);}
+.tab-btn{font-family:var(--ff-d);font-size:0.75rem;font-weight:700;padding:0.65rem 1.4rem;border:none;background:transparent;color:var(--wh);cursor:pointer;border-bottom:2px solid transparent;transition:all 0.15s;letter-spacing:0.04em;opacity:0.55;}
+.tab-btn:hover{color:var(--wh);opacity:1;}
+.tab-btn.active{color:var(--wh);border-bottom-color:var(--acc);opacity:1;}
 .tab-btn.fin-tab{position:relative;}
 .tab-btn.fin-tab .lock-dot{display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--b3);margin-left:5px;vertical-align:middle;transition:background 0.3s;}
 .tab-btn.fin-tab.unlocked .lock-dot{background:var(--green-ui);}
