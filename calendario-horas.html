@@ -1882,6 +1882,8 @@ function renderFinanzas(){
     }
   }
   acum2026+=getBolsaTotalForTrib(2026);
+  loadNCR(2026);
+  acum2026+=getNCRTotal(2026); // NCR: va a CAGR pero no a tributacion
   var proy2026=mesesConDatos>0?Math.round(acum2026/mesesConDatos*12):0;
   var fin2025=590379570; // base para CAGR
 
@@ -1955,6 +1957,30 @@ var BOLSA_CATS = [
   {id:'div_ext', label:'Dividendos extranjero (USD)', moneda:'USD', desc:'Dividendos recibidos en broker extranjero'},
   {id:'gan_ext', label:'Ganancia compra/venta extranjero (USD)', moneda:'USD', desc:'Utilidad neta por venta de acciones o ETFs en el exterior'},
 ];
+// Ingresos No Constitutivos de Renta — van al CAGR pero NO a tributacion
+var NCR_CATS = [
+  {id:'ncr_bvc',  label:'Ganancia en operaciones BVC (COP)',          moneda:'COP', desc:'Utilidad por compra/venta de acciones en Bolsa de Valores de Colombia — no gravada'},
+  {id:'ncr_comp', label:'Componente inflacionario cuentas (COP)',     moneda:'COP', desc:'Componente inflacionario de rendimientos en cuentas de alto rendimiento — Art. 40-1 ET'},
+  {id:'ncr_otros',label:'Otros no constitutivos (COP)',               moneda:'COP', desc:'Otros ingresos no constitutivos de renta ni ganancia ocasional'},
+];
+function ncrKey(year,cat){return 'ncr-'+year+'-'+cat;}
+function saveNCRVal(year,cat,val){
+  memStore[ncrKey(year,cat)]=val;
+  try{localStorage.setItem('marly-'+ncrKey(year,cat),String(val));}catch(e){}
+  fsSync();
+  renderBolsa();
+}
+function getNCRVal(year,cat){return memStore[ncrKey(year,cat)]||0;}
+function loadNCR(year){
+  NCR_CATS.forEach(function(c){
+    try{var v=localStorage.getItem('marly-'+ncrKey(year,c.id));if(v!==null)memStore[ncrKey(year,c.id)]=parseFloat(v)||0;}catch(e){}
+  });
+}
+function getNCRTotal(year){
+  var total=0;
+  NCR_CATS.forEach(function(c){total+=getNCRVal(year,c.id);});
+  return total;
+}
 
 function bolsaKey(year,cat){return 'bolsa-'+year+'-'+cat;}
 function bolsaTRMKey(year){return 'bolsa-trm-'+year;}
@@ -1981,6 +2007,7 @@ function loadBolsa(year){
     try{var v=localStorage.getItem('marly-'+bolsaKey(year,c.id));if(v!==null)memStore[bolsaKey(year,c.id)]=parseFloat(v)||0;}catch(e){}
   });
   try{var t=localStorage.getItem('marly-'+bolsaTRMKey(year));if(t)memStore[bolsaTRMKey(year)]=parseFloat(t)||4200;}catch(e){}
+  loadNCR(year);
 }
 
 function getBolsaTotalCOP(year){
@@ -2041,11 +2068,36 @@ function renderBolsa(){
     html+='</div>';
   });
 
-  // Total card
-  html+='<div style="background:rgba(61,214,140,0.07);border:1px solid rgba(61,214,140,0.25);border-radius:12px;padding:0.9rem 1.1rem;margin-top:0.5rem;">';
+  // Total bolsa card
+  html+='<div style="background:rgba(61,214,140,0.07);border:1px solid rgba(61,214,140,0.25);border-radius:12px;padding:0.9rem 1.1rem;margin-top:0.5rem;margin-bottom:1.2rem;">';
   html+='<div style="font-size:0.54rem;text-transform:uppercase;letter-spacing:0.07em;color:var(--b3);margin-bottom:0.3rem;font-weight:600;">Total bolsa '+bolsaYear+' en COP</div>';
   html+='<div style="font-family:var(--ff-m);font-size:1.2rem;color:var(--green-ui);">'+formatCOP(totalCOP)+'</div>';
-  html+='<div style="font-size:0.56rem;color:var(--b3);margin-top:0.2rem;">TRM aplicada: '+formatCOP(trm)+' · Este total se suma en Tributacion</div>';
+  html+='<div style="font-size:0.56rem;color:var(--b3);margin-top:0.2rem;">TRM: '+formatCOP(trm)+' · Se suma a Tributacion y a Finanzas (CAGR)</div>';
+  html+='</div>';
+
+  // ── Ingresos No Constitutivos de Renta
+  var ncrTotal=0;
+  html+='<div style="font-size:0.6rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--b3);font-weight:600;margin-bottom:0.6rem;border-top:1px solid var(--b6);padding-top:1rem;">Ingresos no constitutivos de renta</div>';
+  html+='<div style="font-size:0.6rem;color:var(--b3);margin-bottom:0.8rem;">Se suman al ingreso total en Finanzas (CAGR) pero <strong style="color:var(--acc);">NO</strong> afectan el tope del Regimen Simple.</div>';
+  NCR_CATS.forEach(function(c){
+    var val=getNCRVal(bolsaYear,c.id);
+    ncrTotal+=val;
+    html+='<div style="background:var(--b8);border:1px solid var(--b6);border-radius:12px;padding:0.9rem 1.1rem;margin-bottom:0.7rem;">';
+    html+='<div style="font-family:var(--ff-d);font-size:0.85rem;font-weight:700;color:var(--wh);margin-bottom:0.18rem;">'+c.label+'</div>';
+    html+='<div style="font-size:0.56rem;color:var(--b3);margin-bottom:0.55rem;">'+c.desc+'</div>';
+    html+='<div style="display:flex;flex-direction:column;gap:0.15rem;">';
+    html+='<span style="font-size:0.52rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--b3);">Monto (COP)</span>';
+    html+='<input type="text" data-ncr="'+c.id+'" placeholder="0"';
+    html+=' value="'+(val>0?val.toLocaleString('es-CO'):'')+'"';
+    html+=' style="font-family:var(--ff-m);font-size:0.78rem;background:var(--b7);border:1px solid var(--b5);border-radius:6px;color:var(--wh);padding:0.32rem 0.55rem;outline:none;width:100%;box-sizing:border-box;" />';
+    if(val>0) html+='<div style="font-family:var(--ff-m);font-size:0.7rem;color:var(--acc);margin-top:0.25rem;">'+formatCOP(val)+'</div>';
+    html+='</div></div>';
+  });
+  // Total NCR card
+  html+='<div style="background:rgba(245,200,66,0.06);border:1px solid rgba(245,200,66,0.25);border-radius:12px;padding:0.9rem 1.1rem;">';
+  html+='<div style="font-size:0.54rem;text-transform:uppercase;letter-spacing:0.07em;color:var(--b3);margin-bottom:0.3rem;font-weight:600;">Total no constitutivos '+bolsaYear+'</div>';
+  html+='<div style="font-family:var(--ff-m);font-size:1.2rem;color:var(--acc);">'+formatCOP(ncrTotal)+'</div>';
+  html+='<div style="font-size:0.56rem;color:var(--b3);margin-top:0.2rem;">Solo va a Finanzas · No afecta Tributacion</div>';
   html+='</div>';
 
   document.getElementById('bolsa-content').innerHTML=html;
@@ -2055,8 +2107,9 @@ function renderBolsa(){
   cont.addEventListener('blur',function(e){
     var inp=e.target;
     var cat=inp.getAttribute('data-cat');
-    if(!cat)return;
-    saveBolsaVal(bolsaYear,cat,parseCOP(inp.value));
+    var ncr=inp.getAttribute('data-ncr');
+    if(cat) saveBolsaVal(bolsaYear,cat,parseCOP(inp.value));
+    else if(ncr) saveNCRVal(bolsaYear,ncr,parseCOP(inp.value));
   },true);
 }
 
@@ -2163,7 +2216,7 @@ var sdot=document.getElementById('sdot'),slabel=document.getElementById('slabel'
 sdot.className='sdot';slabel.textContent='Cargando datos...';
 // Load all months from localStorage before first render
 loadAllMonths(2025);loadAllMonths(2026);loadAllMonths(2027);
-loadBolsa(2025);loadBolsa(2026);loadBolsa(2027);
+loadBolsa(2025);loadBolsa(2026);loadBolsa(2027);loadNCR(2025);loadNCR(2026);loadNCR(2027);
 // Render calendar immediately with local data so it's not blank
 renderAll();
 
