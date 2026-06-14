@@ -581,9 +581,86 @@ function generarExcel(){
       for(var ri=0;ri<dim+10;ri++)ws['!rows'].push({hpt:18});
 
       XLSX.utils.book_append_sheet(wb,ws,MESES[mes]+' '+año);
-      XLSX.writeFile(wb,'Turnos_'+MESES[mes]+'_'+año+'.xlsx');
+
+      // ── MES SIGUIENTE ──
+      var mes2=mes===12?1:mes+1;
+      var año2=mes===12?año+1:año;
+      var ws2={};
+      ws2['A1']=cell(MESES[mes2].toUpperCase()+' '+año2,BG.HDR,FG.WHITE,true);
+      ws2['B1']=cell('',BG.HDR,FG.WHITE,true);
+      for(var hi2=0;hi2<hdrs.length;hi2++){ws2[COLS[hi2]+'2']=cell(hdrs[hi2],hBG[hi2],hFG[hi2],true,false,hi2>=19);}
+      var dim2=new Date(año2,mes2,0).getDate();
+      for(var day2=1;day2<=dim2;day2++){
+        var row2=day2+2;
+        var d2=new Date(año2,mes2-1,day2),dow2=d2.getDay();
+        var dn2=DAY_NAMES[dow2===0?6:dow2-1];
+        var res2=buildDay(d2);
+        var pm2=res2.pm,isSab2=res2.isSab,isDom2=res2.isDom,fest2=res2.fest;
+        var isEsp2=isSab2||isDom2||fest2;
+        var rowBG2=fest2?BG.FESTIVO:(isEsp2?BG.FDS:BG.WHITE);
+        var rowFG2=fest2?FG.FESTIVO:(isEsp2?FG.FDS:FG.BLACK);
+        ws2['A'+row2]=cell(day2,rowBG2,rowFG2,(fest2||isEsp2));
+        ws2['B'+row2]=cell(dn2,rowBG2,rowFG2,(fest2||isEsp2),false,true);
+        for(var pi2=0;pi2<16;pi2++){
+          var posNum2=pi2+1,val2=pm2[posNum2]||'',colL2=COLS[pi2+2];
+          var bg2,fg2,bold2=false,italic2=false;
+          var conf2=res2.conflictos[posNum2];
+          if(posNum2===9){bg2=BG.TURNO;fg2=res2.turnoVac?FG.ROJO:FG.WHITE;bold2=true;}
+          else if(posNum2===10){bg2=BG.POSTURNO;fg2=FG.POSTURNO;bold2=true;}
+          else if(isEsp2){
+            bg2=fest2?BG.FESTIVO:BG.FDS;
+            if(!val2&&conf2==='vac'){bg2=BG.NARANJA;fg2=FG.BLACK;}
+            else if(val2&&conf2==='turno'){fg2=FG.ROJO;bold2=true;}
+            else{fg2=FG.BLACK;}
+          } else if(posNum2===14){bg2=BG.FIJA;fg2=FG.BLACK;italic2=true;}
+          else if(!val2){bg2=BG.NARANJA;fg2=FG.BLACK;}
+          else{bg2=BG.WHITE;fg2=FG.BLACK;}
+          ws2[colL2+row2]=cell(val2,bg2,fg2,bold2,italic2);
+        }
+        ws2['S'+row2]=cell('',BG.NEGRO,FG.WHITE);
+        if(!isEsp2){
+          ws2['T'+row2]=cell(res2.r.join(', '),res2.r.length?BG.ROBADO:BG.WHITE,res2.r.length?FG.ROBADO:FG.BLACK,!!res2.r.length,false,true);
+          ws2['U'+row2]=cell(res2.sq.join(', '),res2.sq.length?BG.DISPSEQ:BG.WHITE,res2.sq.length?FG.DISPSEQ:FG.BLACK,!!res2.sq.length,false,true);
+          ws2['V'+row2]=cell(res2.pg.join(', '),res2.pg.length?BG.PAGA:BG.WHITE,res2.pg.length?FG.PAGA:FG.BLACK,!!res2.pg.length,false,true);
+          ws2['W'+row2]=cell(res2.nr.join(', '),BG.WHITE,FG.BLACK,false,false,true);
+        } else{
+          ws2['T'+row2]=cell('',BG.WHITE,FG.BLACK);ws2['U'+row2]=cell('',BG.WHITE,FG.BLACK);
+          ws2['V'+row2]=cell('',BG.WHITE,FG.BLACK);ws2['W'+row2]=cell('',BG.WHITE,FG.BLACK);
+        }
+      }
+      var mesStr2=String(mes2).padStart(2,'0');
+      var vacsDelMes2=allVacaciones.filter(function(v){return v.desde<=(año2+'-'+mesStr2+'-31')&&v.hasta>=(año2+'-'+mesStr2+'-01');});
+      var vacStartRow2=dim2+4;
+      ws2['A'+vacStartRow2]=cell('VACACIONES '+MESES[mes2].toUpperCase()+' '+año2,BG.VAC_HDR,FG.VAC,true);
+      ws2['B'+vacStartRow2]=cell('',BG.VAC_HDR,FG.VAC,true);
+      ws2['C'+vacStartRow2]=cell('Médico',BG.VAC_HDR,FG.VAC,true);
+      ws2['D'+vacStartRow2]=cell('',BG.VAC_HDR,FG.VAC,true);
+      ws2['E'+vacStartRow2]=cell('Desde',BG.VAC_HDR,FG.VAC,true);
+      ws2['F'+vacStartRow2]=cell('Hasta',BG.VAC_HDR,FG.VAC,true);
+      ws2['G'+vacStartRow2]=cell('Días',BG.VAC_HDR,FG.VAC,true);
+      if(!vacsDelMes2.length){
+        ws2['C'+(vacStartRow2+1)]=cell('Sin vacaciones registradas.',BG.WHITE,FG.BLACK,false,true,true);
+      } else {
+        vacsDelMes2.forEach(function(v,idx2){
+          var vrow2=vacStartRow2+1+idx2;
+          var dias2=Math.round((new Date(v.hasta)-new Date(v.desde))/86400000)+1;
+          ws2['C'+vrow2]=cell(v.fullName,BG.WHITE,FG.BLACK,false,false,true);
+          ws2['D'+vrow2]=cell('',BG.WHITE,FG.BLACK);
+          ws2['E'+vrow2]=cell(formatDate(v.desde),BG.WHITE,FG.BLACK);
+          ws2['F'+vrow2]=cell(formatDate(v.hasta),BG.WHITE,FG.BLACK);
+          ws2['G'+vrow2]=cell(dias2+' días',BG.WHITE,FG.BLACK);
+        });
+      }
+      var lastRow2=vacStartRow2+1+Math.max(vacsDelMes2.length,1);
+      ws2['!ref']='A1:W'+lastRow2;
+      ws2['!cols']=ws['!cols'];
+      ws2['!rows']=[{hpt:20},{hpt:30}];
+      for(var ri2=0;ri2<dim2+10;ri2++)ws2['!rows'].push({hpt:18});
+      XLSX.utils.book_append_sheet(wb,ws2,MESES[mes2]+' '+año2);
+
+      XLSX.writeFile(wb,'Turnos_'+MESES[mes]+'_'+MESES[mes2]+'_'+año+'.xlsx');
       status.className='status success';
-      status.textContent='✓ Generado: Turnos_'+MESES[mes]+'_'+año+'.xlsx';
+      status.textContent='✓ Generado: Turnos_'+MESES[mes]+'_'+MESES[mes2]+'_'+año+'.xlsx';
     }catch(e){
       status.className='status error';
       status.textContent='Error: '+e.message;
