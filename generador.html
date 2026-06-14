@@ -402,7 +402,7 @@ function buildDay(d){
         var pos=sabInfo.asig[med];
         var conf=tieneConflictoSab(med,d);
         if(conf==='vac'){
-          pm[pos]=''; // vacaciones → celda vacía (naranja)
+          pm[pos]=med; // mostrar nombre en rojo sobre naranja
           conflictos[pos]='vac';
         } else {
           pm[pos]=med;
@@ -421,9 +421,9 @@ function buildDay(d){
       pm[1]=rot.m1;pm[7]=rot.m7;
       var c1=tieneConflictoEsp(rot.m1,d);
       var c7=tieneConflictoEsp(rot.m7,d);
-      if(c1==='vac'){pm[1]='';conflictos[1]='vac';}
+      if(c1==='vac'){pm[1]=rot.m1;conflictos[1]='vac';}
       else if(c1==='turno')conflictos[1]='turno';
-      if(c7==='vac'){pm[7]='';conflictos[7]='vac';}
+      if(c7==='vac'){pm[7]=rot.m7;conflictos[7]='vac';}
       else if(c7==='turno')conflictos[7]='turno';
     }
     return{pm:pm,tf:tf,turnoVac:turnoVac,conflictos:conflictos,r:[],sq:[],pg:[],nr:[],isSab:false,isDom:true,fest:fest};
@@ -518,11 +518,9 @@ function generarExcel(){
             bg=BG.POSTURNO;fg=FG.POSTURNO;bold=true;
           } else if(isEsp){
             bg=fest?BG.FESTIVO:BG.FDS;
-            if(!val&&conf==='vac'){
-              // Vacaciones en sábado/dom/fest → naranja
-              bg=BG.NARANJA;fg=FG.BLACK;
-            } else if(val&&conf==='turno'){
-              // Preturno/posturno → texto rojo
+            if(conf==='vac'){
+              bg=BG.NARANJA;fg=FG.ROJO;bold=true;
+            } else if(conf==='turno'){
               fg=FG.ROJO;bold=true;
             } else {
               fg=FG.BLACK;
