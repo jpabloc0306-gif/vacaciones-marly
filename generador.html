@@ -429,12 +429,12 @@ function generarExcel(){
           } else if(posNum===10){
             bg=BG.POSTURNO;fg=FG.POSTURNO;bold=true;
           } else if(isSpec){
-            // Domingo/festivo: fondo según tipo, texto negro por defecto, rojo si conflicto
+            // Domingo/festivo: fondo según tipo, texto SIEMPRE negro salvo conflicto
             bg=isFest?BG.FESTIVO:BG.FDS;
             if(val&&res.conflictos[posNum]){
               fg=FG.ROJO;bold=true;
             } else {
-              fg=isFest?FG.FESTIVO:FG.BLACK;
+              fg=FG.BLACK;
             }
           } else if(posNum===14){
             bg=BG.FIJA;fg=FG.BLACK;italic=true;
