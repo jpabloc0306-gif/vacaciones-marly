@@ -118,7 +118,8 @@ a{color:var(--accent);}
       <div class="leg"><div class="leg-dot" style="background:#E2EFDA"></div>Disp. paga turno</div>
       <div class="leg"><div class="leg-dot" style="background:#FFEB9C;border:1px solid #ccc"></div>Disponibles</div>
       <div class="leg"><div class="leg-dot" style="background:#FCE4D6;border:1px solid #F0997B"></div>Festivo</div>
-      <div class="leg"><div class="leg-dot" style="background:#EDEDED"></div>Fin de semana</div>
+      <div class="leg"><div class="leg-dot" style="background:#EDEDED"></div>Fin de semana / Domingo</div>
+      <div class="leg"><div class="leg-dot" style="background:#EDEDED;border:2px solid #C00000"></div>Dom/Fest — conflicto turno</div>
     </div>
   </div>
 
@@ -133,6 +134,20 @@ var FIRESTORE_URL='https://firestore.googleapis.com/v1/projects/'+PROJECT_ID+'/d
 
 var NAMES=['Leonardo Cendales','Andrés Ruiz','Enrique Lopierre','Mauricio Pérez','Laura Tobos','Luisa Aguirre','Andrés Diaz','JB Silva','Carmen Teresa Mojica','Luis Eduardo Silva','Alexandra Vargas','María José Cantillo','Juan Manuel Arias','Germán Gutiérrez','Cristian Chamorro','Juan Carlos Téllez','Angela Taborda','Edna Cruz','Luis Fernando Álvarez','Rafael Turriago','Carlos Higuera','Juan Pablo Castañeda','María Cecilia García','José Luis Pay'];
 var NAME_TO_KEY={'Leonardo Cendales':'Cendales','Andrés Ruiz':'Ruiz','Enrique Lopierre':'Lopierre','Mauricio Pérez':'Perez','Laura Tobos':'Tobos','Luisa Aguirre':'Aguirre','Andrés Diaz':'Diaz','JB Silva':'JB Silva','Carmen Teresa Mojica':'Mojica','Luis Eduardo Silva':'LE Silva','Alexandra Vargas':'Vargas','María José Cantillo':'Cantillo','Juan Manuel Arias':'Arias','Germán Gutiérrez':'Gutierrez','Cristian Chamorro':'Chamorro','Juan Carlos Téllez':'Tellez','Angela Taborda':'Taborda','Edna Cruz':'Cruz','Luis Fernando Álvarez':'Alvarez','Rafael Turriago':'Turriago','Carlos Higuera':'Higuera','Juan Pablo Castañeda':'Castaneda','María Cecilia García':'Garcia','José Luis Pay':'Pay'};
+
+// ── ROTACIÓN DOMINGOS/FESTIVOS ──
+// Lista en orden de rotación
+var DOM_MEDICOS=['Tobos','Cruz','Vargas','Garcia','Arias','Pay','Tellez','Chamorro',
+  'Lopierre','Turriago','Perez','Cendales','Alvarez','Diaz','Castaneda',
+  'Ruiz','LE Silva','Gutierrez','Taborda','Cantillo','Sanchez'];
+
+// Anclaje: Lopierre (idx=8) el 28 dic 2025 en pos7
+// turno 29: 29%21=8=Lopierre, 29%2=1→pos7 ✓
+var DOM_ANCHOR_TURNO = 29;
+var DOM_ANCHOR_DATE = new Date(2025,11,28); // 28 dic 2025
+
+// Médicos que NO hacen turno (nunca tienen conflicto)
+var NO_TURNO_DOM = {'Cruz':1,'Tellez':1,'Perez':1,'Taborda':1,'Lopierre':1,'Alvarez':1};
 
 var allVacaciones=[];
 
@@ -199,9 +214,63 @@ var now=new Date();
 document.getElementById('mes').value=now.getMonth()+1;
 cargarVacaciones();
 
-// ── PLANTILLA ACTUALIZADA ──
-// Seq 4 V: Chamorro → Lopierre
-// Seq 13 V: Lopierre → Chamorro
+// ── FESTIVOS ──
+var FESTIVOS_STR=['2026-01-01','2026-01-12','2026-03-23','2026-04-02','2026-04-03',
+  '2026-05-01','2026-05-18','2026-06-08','2026-06-15','2026-06-29',
+  '2026-07-20','2026-08-07','2026-08-17','2026-10-12','2026-11-02',
+  '2026-11-16','2026-12-08','2026-12-25'];
+
+function isFestivo(d){return FESTIVOS_STR.indexOf(toISO(d))!==-1;}
+function isEspecial(d){return d.getDay()===0||isFestivo(d);}
+function toISO(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function daysBetween(d1,d2){return Math.round((d2-d1)/86400000);}
+
+// Generar lista ordenada de todos los días especiales desde 2025 para calcular índice
+function buildDiasEspecialesList(){
+  var list=[];
+  var d=new Date(2025,0,1);
+  var end=new Date(2026,11,31);
+  while(d<=end){
+    if(d.getDay()===0||isFestivo(d)){
+      list.push(new Date(d));
+    }
+    d.setDate(d.getDate()+1);
+  }
+  // Incluir 28 dic 2025 si no está
+  var anchor=new Date(2025,11,28);
+  var hasAnchor=list.some(function(x){return x.getTime()===anchor.getTime();});
+  if(!hasAnchor)list.push(anchor);
+  list.sort(function(a,b){return a-b;});
+  // Dedup
+  var dedup=[];
+  list.forEach(function(x){
+    if(!dedup.length||dedup[dedup.length-1].getTime()!==x.getTime())dedup.push(x);
+  });
+  return dedup;
+}
+
+var DIAS_ESP_LIST = buildDiasEspecialesList();
+var ANCHOR_IDX = DIAS_ESP_LIST.findIndex(function(d){return d.getTime()===DOM_ANCHOR_DATE.getTime();});
+
+function getDomRotacion(d){
+  // Retorna {m1, m7, conflicto1, conflicto7}
+  var idx=DIAS_ESP_LIST.findIndex(function(x){return x.getTime()===d.getTime();});
+  if(idx<0)return null;
+  var diff=idx-ANCHOR_IDX;
+  var turnoBase=DOM_ANCHOR_TURNO+diff*2;
+  var t1=turnoBase, t7=turnoBase+1;
+  var m1=DOM_MEDICOS[((t1%21)+21)%21];
+  var m7=DOM_MEDICOS[((t7%21)+21)%21];
+  var ds=toISO(d);
+  var c1=!NO_TURNO_DOM[m1]; // puede tener conflicto si hace turnos
+  var c7=!NO_TURNO_DOM[m7];
+  // También conflicto si está de vacaciones
+  var v1=allVacaciones.some(function(v){return v.doc===m1&&ds>=v.desde&&ds<=v.hasta;});
+  var v7=allVacaciones.some(function(v){return v.doc===m7&&ds>=v.desde&&ds<=v.hasta;});
+  return{m1:m1,m7:m7,conflicto1:c1||v1,conflicto7:c7||v7,vac1:v1,vac7:v7};
+}
+
+// ── TURNOS ENTRE SEMANA ──
 var PLANTILLA={
   1:{L:'Cruz',M:'Cruz',X:'Cruz',J:'Cruz',V:'Garcia',N:'Garcia'},
   2:{L:'Vargas',M:'Vargas',X:'Vargas',J:'Vargas',V:'Vargas',N:'Vargas'},
@@ -220,7 +289,6 @@ var PLANTILLA={
   15:{L:'',M:'Perez',X:'',J:'Perez',V:'',N:'Cendales'},
   16:{L:'Castaneda',M:'Aguirre',X:'Castaneda',J:'Castaneda',V:'Castaneda',N:'Castaneda'}
 };
-
 var NO_TURNO=['Cruz','Tellez','JB Silva','Perez','Taborda','Lopierre','Alvarez','Mojica'];
 var SEQ_DUENO={1:'Cruz',2:'Vargas',3:'Perez',4:'Chamorro',5:'Taborda',6:'Arias',7:'Garcia',8:'Tellez',9:'JB Silva',10:'LE Silva',11:'Turriago',12:'Alvarez',13:'Cantillo',14:'Mojica',15:'Perez',16:'Castaneda'};
 var PAGAN_TURNO=['Higuera','Aguirre','Cantillo'];
@@ -230,7 +298,6 @@ var SEQ_SLOT_DIA33={12:0,13:1,15:2,16:3,1:4,2:5,3:6,4:7,5:8,6:9,7:10,8:11,9:12,1
 var SEQ_TO_SLOT_BASE={};
 Object.keys(SEQ_SLOT_DIA33).forEach(function(s){SEQ_TO_SLOT_BASE[s]=((SEQ_SLOT_DIA33[s]-33)%15+15)%15;});
 var ANCHOR=new Date(2026,3,1),H_ANC=new Date(2026,3,18),R_ANC=new Date(2026,3,19);
-var FESTIVOS=['2026-01-01','2026-01-12','2026-03-23','2026-04-02','2026-04-03','2026-05-01','2026-05-18','2026-06-08','2026-06-15','2026-06-29','2026-07-20','2026-08-07','2026-08-17','2026-10-12','2026-11-02','2026-11-16','2026-12-08','2026-12-25'];
 var MESES=['','Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 var DAY_NAMES=['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
 var DAY_COL={1:'L',2:'M',3:'X',4:'J',5:'V',6:null,0:null};
@@ -242,11 +309,11 @@ function getName(seq,col,w){if(!PLANTILLA[seq])return '';if(col==='X'&&seq===9)r
 function vendria(doc,col,w){return ROTATE_SEQ.some(function(s){return getName(s,col,w)===doc;});}
 function ain(arr,item){if(item&&arr.indexOf(item)===-1)arr.push(item);}
 function isVac(doc,ds){return allVacaciones.some(function(v){return v.doc===doc&&ds>=v.desde&&ds<=v.hasta;});}
-function isFest(d){return FESTIVOS.indexOf(d.toISOString().slice(0,10))!==-1;}
+function isFest(d){return FESTIVOS_STR.indexOf(toISO(d))!==-1;}
 
 function buildDay(d){
   var dow=d.getDay(),fds=dow===0||dow===6,fest=isFest(d),spec=fds||fest;
-  var w=getWT(d),col=DAY_COL[dow],ds=d.toISOString().slice(0,10);
+  var w=getWT(d),col=DAY_COL[dow],ds=toISO(d);
   var s9=null,s10=null;
   ROTATE_SEQ.forEach(function(s){var p=getPos(s,d);if(p===9)s9=s;if(p===10)s10=s;});
   var tb=s9?getName(s9,'N',w):'';
@@ -258,7 +325,24 @@ function buildDay(d){
   var pr=ha?'Higuera':(ra?'Ruiz':null),ps=s10?getName(s10,'N',w):'',pd=pr||ps;
   var pm={};for(var i=1;i<=16;i++)pm[i]='';
   var turnoVac=isVac(tf,ds);
-  if(spec){pm[9]=tf;pm[10]=pd;return{pm:pm,tf:tf,turnoVac:turnoVac,r:[],sq:[],pg:[],nr:[],spec:true,fds:fds,fest:fest};}
+
+  // Para domingos y festivos: llenar pos1 y pos7 con rotación
+  var domRot=null;
+  var domConflicto1=false,domConflicto7=false;
+  if(spec){
+    pm[9]=tf;pm[10]=pd;
+    // Rotación domingos/festivos
+    domRot=getDomRotacion(d);
+    if(domRot){
+      pm[1]=domRot.m1;
+      pm[7]=domRot.m7;
+      domConflicto1=domRot.conflicto1;
+      domConflicto7=domRot.conflicto7;
+    }
+    return{pm:pm,tf:tf,turnoVac:turnoVac,r:[],sq:[],pg:[],nr:[],spec:true,fds:fds,fest:fest,
+           domConflicto1:domConflicto1,domConflicto7:domConflicto7};
+  }
+
   ROTATE_SEQ.forEach(function(s){var p=getPos(s,d),nd=getName(s,col,w);if(p===9)pm[9]=tf;else if(p===10)pm[10]=pd;else{if(nd===tf||nd===pd)pm[p]='';else pm[p]=nd;}});
   pm[14]=PLANTILLA[14][col]||'';
   for(var p=1;p<=16;p++){if(p!==9&&pm[p]&&isVac(pm[p],ds))pm[p]='';}
@@ -282,20 +366,19 @@ function buildDay(d){
   if(col==='X')dl=dl.filter(function(x){return x!==(w==='A'?'Garcia':'Chamorro');});
   if(col==='V')dl=dl.filter(function(x){return x!==(w==='A'?'Turriago':'Perez');});
   var nr=dl.filter(function(doc){return !u3[doc]&&!isVac(doc,ds);});
-  return{pm:pm,tf:tf,turnoVac:turnoVac,r:r,sq:sq,pg:pg,nr:nr,spec:false,fds:false,fest:false};
+  return{pm:pm,tf:tf,turnoVac:turnoVac,r:r,sq:sq,pg:pg,nr:nr,spec:false,fds:false,fest:false,
+         domConflicto1:false,domConflicto7:false};
 }
 
 // ── ESTILOS EXCEL ──
 var THIN={style:'thin',color:{rgb:'FFBFBFBF'}};
 var BORDER={top:THIN,bottom:THIN,left:THIN,right:THIN};
-
 function makeStyle(bgRgb,fontRgb,bold,italic,leftAlign){
   return{fill:{fgColor:{rgb:bgRgb||'FFFFFFFF'}},font:{name:'Arial',sz:9,bold:bold||false,italic:italic||false,color:{rgb:fontRgb||'FF000000'}},alignment:{horizontal:leftAlign?'left':'center',vertical:'center',wrapText:true},border:BORDER};
 }
 function cell(val,bgRgb,fontRgb,bold,italic,leftAlign){
   return{v:val||'',t:'s',s:makeStyle(bgRgb,fontRgb,bold,italic,leftAlign)};
 }
-
 var BG={HDR:'FF1F4E79',TURNO:'FF375623',POSTURNO:'FFBFBFBF',FESTIVO:'FFFCE4D6',FDS:'FFEDEDED',FIJA:'FFF2F2F2',NARANJA:'FFF4B183',ROBADO:'FFFFE0CC',DISPSEQ:'FFDCE6F1',PAGA:'FFE2EFDA',DISP_HDR:'FFFFEB9C',NEGRO:'FF000000',WHITE:'FFFFFFFF',GRAY14:'FF7F7F7F',VAC_HDR:'FFFDEAEA'};
 var FG={WHITE:'FFFFFFFF',BLACK:'FF000000',ROJO:'FFCC0000',POSTURNO:'FF3F3F3F',FESTIVO:'FFC00000',FDS:'FF595959',ROBADO:'FF7F3000',DISPSEQ:'FF1F4E79',PAGA:'FF375623',DISP_HDR:'FF7F4E00',VAC:'FF7F0000'};
 
@@ -334,28 +417,45 @@ function generarExcel(){
         for(var pi=0;pi<16;pi++){
           var posNum=pi+1,val=pm[posNum]||'',colL=COLS[pi+2];
           var bg,fg,bold=false,italic=false;
-          if(posNum===9){bg=BG.TURNO;fg=res.turnoVac?FG.ROJO:FG.WHITE;bold=true;}
-          else if(posNum===10){bg=BG.POSTURNO;fg=FG.POSTURNO;bold=true;}
-          else if(isFest){bg=BG.FESTIVO;fg=FG.FESTIVO;}
-          else if(isFds){bg=BG.FDS;fg=FG.FDS;}
-          else if(posNum===14){bg=BG.FIJA;fg=FG.BLACK;italic=true;}
-          else if(!val&&!isSpec){bg=BG.NARANJA;fg=FG.BLACK;}
-          else{bg=BG.WHITE;fg=FG.BLACK;}
+
+          if(posNum===9){
+            bg=BG.TURNO;fg=res.turnoVac?FG.ROJO:FG.WHITE;bold=true;
+          } else if(posNum===10){
+            bg=BG.POSTURNO;fg=FG.POSTURNO;bold=true;
+          } else if(isSpec){
+            // Domingos/festivos: pos1 y pos7 pueden tener conflicto
+            bg=isFest?BG.FESTIVO:BG.FDS;
+            fg=isFest?FG.FESTIVO:FG.FDS;
+            if(posNum===1&&res.domConflicto1&&val){fg=FG.ROJO;bold=true;}
+            if(posNum===7&&res.domConflicto7&&val){fg=FG.ROJO;bold=true;}
+          } else if(posNum===14){
+            bg=BG.FIJA;fg=FG.BLACK;italic=true;
+          } else if(!val){
+            bg=BG.NARANJA;fg=FG.BLACK;
+          } else{
+            bg=BG.WHITE;fg=FG.BLACK;
+          }
           ws[colL+row]=cell(val,bg,fg,bold,italic);
         }
 
         ws['S'+row]=cell('',BG.NEGRO,FG.WHITE);
-        ws['T'+row]=cell(res.r.join(', '),res.r.length?BG.ROBADO:BG.WHITE,res.r.length?FG.ROBADO:FG.BLACK,!!res.r.length,false,true);
-        ws['U'+row]=cell(res.sq.join(', '),res.sq.length?BG.DISPSEQ:BG.WHITE,res.sq.length?FG.DISPSEQ:FG.BLACK,!!res.sq.length,false,true);
-        ws['V'+row]=cell(res.pg.join(', '),res.pg.length?BG.PAGA:BG.WHITE,res.pg.length?FG.PAGA:FG.BLACK,!!res.pg.length,false,true);
-        ws['W'+row]=cell(res.nr.join(', '),BG.WHITE,FG.BLACK,false,false,true);
+        if(!isSpec){
+          ws['T'+row]=cell(res.r.join(', '),res.r.length?BG.ROBADO:BG.WHITE,res.r.length?FG.ROBADO:FG.BLACK,!!res.r.length,false,true);
+          ws['U'+row]=cell(res.sq.join(', '),res.sq.length?BG.DISPSEQ:BG.WHITE,res.sq.length?FG.DISPSEQ:FG.BLACK,!!res.sq.length,false,true);
+          ws['V'+row]=cell(res.pg.join(', '),res.pg.length?BG.PAGA:BG.WHITE,res.pg.length?FG.PAGA:FG.BLACK,!!res.pg.length,false,true);
+          ws['W'+row]=cell(res.nr.join(', '),BG.WHITE,FG.BLACK,false,false,true);
+        } else {
+          ws['T'+row]=cell('',BG.WHITE,FG.BLACK);
+          ws['U'+row]=cell('',BG.WHITE,FG.BLACK);
+          ws['V'+row]=cell('',BG.WHITE,FG.BLACK);
+          ws['W'+row]=cell('',BG.WHITE,FG.BLACK);
+        }
       }
 
       // Lista de vacaciones al final
       var mesStr=String(mes).padStart(2,'0');
       var vacsDelMes=allVacaciones.filter(function(v){return v.desde<=(año+'-'+mesStr+'-31')&&v.hasta>=(año+'-'+mesStr+'-01');});
       var vacStartRow=dim+4;
-
       ws['A'+vacStartRow]=cell('VACACIONES '+MESES[mes].toUpperCase()+' '+año,BG.VAC_HDR,FG.VAC,true);
       ws['B'+vacStartRow]=cell('',BG.VAC_HDR,FG.VAC,true);
       ws['C'+vacStartRow]=cell('Médico',BG.VAC_HDR,FG.VAC,true);
@@ -363,7 +463,6 @@ function generarExcel(){
       ws['E'+vacStartRow]=cell('Desde',BG.VAC_HDR,FG.VAC,true);
       ws['F'+vacStartRow]=cell('Hasta',BG.VAC_HDR,FG.VAC,true);
       ws['G'+vacStartRow]=cell('Días',BG.VAC_HDR,FG.VAC,true);
-
       if(!vacsDelMes.length){
         ws['C'+(vacStartRow+1)]=cell('Sin vacaciones registradas.',BG.WHITE,FG.BLACK,false,true,true);
       } else {
