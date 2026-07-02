@@ -137,11 +137,11 @@ var NAME_TO_KEY={'Leonardo Cendales':'Cendales','Andrés Ruiz':'Ruiz','Enrique L
 
 // ── ROTACIÓN SÁBADOS ──
 // La lista de cada grupo es el ORDEN DE MATERNIDAD (pos 7)
-var GRUPO_A=['Castaneda','Taborda','Perez','Cruz','JB Silva','Ruiz','Turriago','Tobos','Garcia','Pay','Sanchez']; // 11 → usa comodín 13
-var GRUPO_B=['Alvarez','Arias','Tellez','Vargas','Lopierre','Diaz','Chamorro','Gutierrez','LE Silva','Cantillo']; // 10
+var GRUPO_A=['Castaneda','Taborda','Cruz','JB Silva','Ruiz','Turriago','Tobos','Garcia','Pay','Sanchez']; // 10
+var GRUPO_B=['Alvarez','Perez','Arias','Tellez','Vargas','Lopierre','Diaz','Chamorro','Gutierrez','LE Silva','Cantillo']; // 11 → usa comodín 13
 // Ruta personal de posiciones (salto 3 hacia adelante, empezando en maternidad):
-var RUTA_A=[7,12,2,5,8,13,3,6,11,1,4];  // 11 posiciones (1→4→7→12→2→5→8→13→3→6→11)
-var RUTA_B=[7,12,3,6,11,2,5,8,1,4];     // 10 posiciones (1→4→7→12→3→6→11→2→5→8)
+var RUTA_A=[7,12,3,6,11,2,5,8,1,4];     // 10 posiciones (1→4→7→12→3→6→11→2→5→8)
+var RUTA_B=[7,12,2,5,8,13,3,6,11,1,4];  // 11 posiciones (1→4→7→12→2→5→8→13→3→6→11)
 // Anclajes: en estos sábados el médico #1 de la lista hace maternidad
 var ANCHOR_SAB_A=new Date(2026,5,27); // 27 jun 2026, Castaneda pos7
 var ANCHOR_SAB_B=new Date(2026,5,20); // 20 jun 2026, Alvarez pos7
@@ -178,7 +178,7 @@ function getSabAsignacion(d){
   if(grupo==='A'){
     var n=Math.floor(diff/2); // sábados de A desde el anclaje
     GRUPO_A.forEach(function(med,mIdx){
-      var k=((n-mIdx)%11+11)%11;
+      var k=((n-mIdx)%10+10)%10;
       result.asig[med]=RUTA_A[k];
     });
   } else {
@@ -187,7 +187,7 @@ function getSabAsignacion(d){
     var idxAnchorB=sabsB_list.findIndex(function(s){return s.getTime()===ANCHOR_SAB_B.getTime();});
     var n2=idxB-idxAnchorB;
     GRUPO_B.forEach(function(med,mIdx){
-      var k2=((n2-mIdx)%10+10)%10;
+      var k2=((n2-mIdx)%11+11)%11;
       result.asig[med]=RUTA_B[k2];
     });
   }
