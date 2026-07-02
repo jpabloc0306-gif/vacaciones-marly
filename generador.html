@@ -136,18 +136,15 @@ var NAMES=['Leonardo Cendales','Andrés Ruiz','Enrique Lopierre','Mauricio Pére
 var NAME_TO_KEY={'Leonardo Cendales':'Cendales','Andrés Ruiz':'Ruiz','Enrique Lopierre':'Lopierre','Mauricio Pérez':'Perez','Laura Tobos':'Tobos','Luisa Aguirre':'Aguirre','Andrés Diaz':'Diaz','JB Silva':'JB Silva','Carmen Teresa Mojica':'Mojica','Luis Eduardo Silva':'LE Silva','Alexandra Vargas':'Vargas','María José Cantillo':'Cantillo','Juan Manuel Arias':'Arias','Germán Gutiérrez':'Gutierrez','Cristian Chamorro':'Chamorro','Juan Carlos Téllez':'Tellez','Angela Taborda':'Taborda','Edna Cruz':'Cruz','Luis Fernando Álvarez':'Alvarez','Rafael Turriago':'Turriago','Carlos Higuera':'Higuera','Juan Pablo Castañeda':'Castaneda','María Cecilia García':'Garcia','José Luis Pay':'Pay'};
 
 // ── ROTACIÓN SÁBADOS ──
-var GRUPO_A=['Castaneda','Taborda','Perez','Cruz','JB Silva','Ruiz','Turriago','Tobos','Garcia','Pay'];
-var GRUPO_B=['Alvarez','Arias','Tellez','Vargas','Lopierre','Diaz','Chamorro','Gutierrez','LE Silva','Cantillo','Sanchez'];
-var POS_A=[1,2,3,4,5,6,7,8,11,12];
-var POS_B=[1,2,3,4,5,6,7,8,11,12,13];
-// Secuencia de índices con salto 3
-var SEQ_IDX_A=(function(){var r=[];for(var i=0;i<10;i++)r.push((3*i)%10);return r;})();
-var SEQ_IDX_B=(function(){var r=[];for(var i=0;i<11;i++)r.push((3*i)%11);return r;})();
-// Anclajes
+// La lista de cada grupo es el ORDEN DE MATERNIDAD (pos 7)
+var GRUPO_A=['Castaneda','Taborda','Perez','Cruz','JB Silva','Ruiz','Turriago','Tobos','Garcia','Pay','Sanchez']; // 11 → usa comodín 13
+var GRUPO_B=['Alvarez','Arias','Tellez','Vargas','Lopierre','Diaz','Chamorro','Gutierrez','LE Silva','Cantillo']; // 10
+// Ruta personal de posiciones (salto 3 hacia adelante, empezando en maternidad):
+var RUTA_A=[7,12,2,5,8,13,3,6,11,1,4];  // 11 posiciones (1→4→7→12→2→5→8→13→3→6→11)
+var RUTA_B=[7,12,3,6,11,2,5,8,1,4];     // 10 posiciones (1→4→7→12→3→6→11→2→5→8)
+// Anclajes: en estos sábados el médico #1 de la lista hace maternidad
 var ANCHOR_SAB_A=new Date(2026,5,27); // 27 jun 2026, Castaneda pos7
 var ANCHOR_SAB_B=new Date(2026,5,20); // 20 jun 2026, Alvarez pos7
-var ANCHOR_K_A=2; // en el anclaje A, Castaneda(idx0) tiene SEQ_IDX_A[2]=6→POS_A[6]=7 ✓
-var ANCHOR_K_B=2; // en el anclaje B, Alvarez(idx0) tiene SEQ_IDX_B[2]=6→POS_B[6]=7 ✓
 
 // Lista de todos los sábados de 2026
 var SABADOS_2026=(function(){
@@ -179,27 +176,27 @@ function getSabAsignacion(d){
   var result={grupo:grupo,asig:{}};
 
   if(grupo==='A'){
-    var sabsA=Math.floor(diff/2);
+    var n=Math.floor(diff/2); // sábados de A desde el anclaje
     GRUPO_A.forEach(function(med,mIdx){
-      var k=(mIdx+ANCHOR_K_A+sabsA)%10;
-      result.asig[med]=POS_A[SEQ_IDX_A[k]];
+      var k=((n-mIdx)%11+11)%11;
+      result.asig[med]=RUTA_A[k];
     });
   } else {
     var sabsB_list=SABADOS_2026.filter(function(s,i){return (i-IDX_ANCHOR_A)%2!==0;});
     var idxB=sabsB_list.findIndex(function(s){return s.getTime()===ms;});
     var idxAnchorB=sabsB_list.findIndex(function(s){return s.getTime()===ANCHOR_SAB_B.getTime();});
-    var sabsB=idxB-idxAnchorB;
+    var n2=idxB-idxAnchorB;
     GRUPO_B.forEach(function(med,mIdx){
-      var k=(mIdx+ANCHOR_K_B+sabsB)%11;
-      result.asig[med]=POS_B[SEQ_IDX_B[k]];
+      var k2=((n2-mIdx)%10+10)%10;
+      result.asig[med]=RUTA_B[k2];
     });
   }
   return result;
 }
 
 // ── ROTACIÓN DOMINGOS/FESTIVOS ──
-var DOM_MEDICOS=['Tobos','Cruz','Vargas','Garcia','Arias','Pay','Tellez','Chamorro',
-  'Lopierre','Turriago','Perez','Cendales','Alvarez','Diaz','Castaneda',
+var DOM_MEDICOS=['Cruz','Tobos','Vargas','Garcia','Arias','Pay','Tellez','Diaz',
+  'Lopierre','Turriago','Perez','Cendales','Alvarez','Chamorro','Castaneda',
   'Ruiz','LE Silva','Gutierrez','Taborda','Cantillo','Sanchez'];
 var DOM_ANCHOR_TURNO=29;
 var DOM_ANCHOR_MS=new Date(2025,11,28).getTime();
