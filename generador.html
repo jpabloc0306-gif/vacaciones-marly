@@ -438,15 +438,13 @@ function buildDay(d){
   if(pr&&ps&&ps!==pr){if(vendria(ps,col,w)&&!occ[ps]&&!isVac(ps,ds))ain(r,ps);for(var si=0;si<ROTATE_SEQ.length;si++){var sq2=ROTATE_SEQ[si];if(getName(sq2,'N',w)===ps){var nd2=getName(sq2,col,w);if(nd2&&nd2!==ps&&!occ[nd2]&&!isVac(nd2,ds))ain(r,nd2);break;}}}
   var u1={};Object.keys(occ).forEach(function(k){u1[k]=true;});r.forEach(function(k){u1[k]=true;});
   var sq=[];
-  var d9=SEQ_DUENO[s9]||'',n9=s9?getName(s9,col,w):'';
-  if(d9&&NO_TURNO.indexOf(d9)!==-1&&!u1[d9]&&n9===d9&&!isVac(d9,ds))ain(sq,d9);
-  if(n9&&n9!==d9&&!u1[n9]&&!isVac(n9,ds))ain(sq,n9);
-  var d10=SEQ_DUENO[s10]||'',n10=s10?getName(s10,col,w):'';
-  if(d10&&NO_TURNO.indexOf(d10)!==-1&&!u1[d10]&&n10===d10&&!isVac(d10,ds))ain(sq,d10);
-  if(n10&&n10!==d10&&!u1[n10]&&!isVac(n10,ds))ain(sq,n10);
+  var n9=s9?getName(s9,col,w):'';
+  if(n9&&n9!==tf&&!u1[n9]&&!isVac(n9,ds))ain(sq,n9);
+  var n10=s10?getName(s10,col,w):'';
+  if(n10&&n10!==pd&&!u1[n10]&&!isVac(n10,ds))ain(sq,n10);
   var u2={};Object.keys(u1).forEach(function(k){u2[k]=true;});sq.forEach(function(k){u2[k]=true;});
   var pg=[];
-  PAGAN_TURNO.forEach(function(doc){if((doc===tf||doc===pd)&&!u2[doc]&&vendria(doc,col,w)&&!isVac(doc,ds))ain(pg,doc);});
+  PAGAN_TURNO.forEach(function(doc){if((doc===tf||doc===pd)&&vendria(doc,col,w)&&!isVac(doc,ds))ain(pg,doc);});
   var u3={};Object.keys(u2).forEach(function(k){u3[k]=true;});pg.forEach(function(k){u3[k]=true;});
   var dl=(DISP_DIA[col]||[]).slice();
   if(col==='X')dl=dl.filter(function(x){return x!==(w==='A'?'Garcia':'Chamorro');});
